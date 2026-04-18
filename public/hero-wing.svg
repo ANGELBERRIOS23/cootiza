@@ -1,0 +1,29 @@
+<svg width="1600" height="1200" viewBox="0 0 1600 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="800" y1="0" x2="800" y2="1200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5A86B8"/>
+      <stop offset="0.45" stop-color="#7FAED4"/>
+      <stop offset="1" stop-color="#D9EDF9"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="440" y1="740" x2="1320" y2="1040" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF2FB"/>
+      <stop offset="1" stop-color="#B6C6D8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="1200" fill="url(#sky)"/>
+
+  <g opacity="0.2" fill="#FFFFFF">
+    <ellipse cx="260" cy="220" rx="150" ry="44"/>
+    <ellipse cx="920" cy="280" rx="220" ry="56"/>
+    <ellipse cx="1320" cy="190" rx="160" ry="40"/>
+    <ellipse cx="1120" cy="470" rx="260" ry="60"/>
+  </g>
+
+  <path d="M356 768L1416 1078L1090 1142L318 872L356 768Z" fill="url(#wing)"/>
+  <path d="M340 776L1060 1138L956 1168L304 892L340 776Z" fill="#8EA5BE" opacity="0.46"/>
+
+  <path d="M1090 1016L1282 1110L1198 1132L1038 1058L1090 1016Z" fill="#8AA1B9" opacity="0.55"/>
+
+  <path d="M340 774L1416 1078" stroke="#E8F0FA" stroke-width="8" stroke-linecap="round" opacity="0.66"/>
+</svg>

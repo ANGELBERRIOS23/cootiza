@@ -1,0 +1,47 @@
+{
+  "packages": [
+    {
+      "packageCode": "PKG-CTG-001",
+      "name": "Cartagena Clasica 4D/3N",
+      "destination": "Cartagena, Colombia",
+      "durationDays": 4,
+      "basePrice": 2890,
+      "isOffer": true,
+      "offerPrice": 2490,
+      "offerLabel": "Promo de temporada",
+      "summary": "Escapada a Cartagena con city tour, playa y tiempo libre.",
+      "description": "Paquete ideal para viajeros que quieren cultura, mar y descanso en pocos dias.",
+      "coverImageUrl": "/logo-agencia.png",
+      "gallery": [],
+      "includes": [
+        "Boleto aereo ida y vuelta",
+        "Traslados aeropuerto-hotel-aeropuerto",
+        "Hospedaje 3 noches",
+        "Desayunos diarios"
+      ],
+      "excludes": [
+        "Almuerzos y cenas",
+        "Gastos personales",
+        "Tours opcionales"
+      ],
+      "itinerary": [
+        {
+          "title": "Dia 1 - Llegada",
+          "description": "Llegada, traslado al hotel y check-in."
+        },
+        {
+          "title": "Dia 2 - Centro Historico",
+          "description": "Recorrido guiado por la ciudad amurallada."
+        },
+        {
+          "title": "Dia 3 - Playa",
+          "description": "Dia libre de playa o tour opcional."
+        },
+        {
+          "title": "Dia 4 - Regreso",
+          "description": "Check-out y traslado al aeropuerto."
+        }
+      ]
+    }
+  ]
+}

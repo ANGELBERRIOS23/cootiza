@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+}
+
+body {
+  background: radial-gradient(circle at top left, #e0f2fe 0%, #f8fafc 40%, #f8fafc 100%);
+  color: var(--foreground);
+  font-family: var(--font-body), sans-serif;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display), serif;
+}
+
+.plane-bounce {
+  animation: plane-bounce 24s linear infinite;
+}
+
+.plane-bounce-alt {
+  animation: plane-bounce-alt 27s linear infinite;
+  animation-delay: 0.8s;
+}
+
+@keyframes plane-bounce {
+  0% {
+    transform: translate3d(6vw, 24vh, 0) rotate(355deg);
+  }
+  10% {
+    transform: translate3d(18vw, 14vh, 0) rotate(377deg);
+  }
+  20% {
+    transform: translate3d(36vw, 8vh, 0) rotate(400deg);
+  }
+  30% {
+    transform: translate3d(58vw, 10vh, 0) rotate(426deg);
+  }
+  40% {
+    transform: translate3d(80vw, 18vh, 0) rotate(451deg);
+  }
+  50% {
+    transform: translate3d(91vw, 34vh, 0) rotate(487deg);
+  }
+  60% {
+    transform: translate3d(86vw, 52vh, 0) rotate(535deg);
+  }
+  70% {
+    transform: translate3d(72vw, 70vh, 0) rotate(560deg);
+  }
+  80% {
+    transform: translate3d(48vw, 82vh, 0) rotate(588deg);
+  }
+  90% {
+    transform: translate3d(22vw, 76vh, 0) rotate(617deg);
+  }
+  100% {
+    transform: translate3d(6vw, 24vh, 0) rotate(715deg);
+  }
+}
+
+@keyframes plane-bounce-alt {
+  0% {
+    transform: translate3d(90vw, 74vh, 0) rotate(190deg);
+  }
+  10% {
+    transform: translate3d(74vw, 84vh, 0) rotate(214deg);
+  }
+  20% {
+    transform: translate3d(50vw, 88vh, 0) rotate(237deg);
+  }
+  30% {
+    transform: translate3d(26vw, 82vh, 0) rotate(262deg);
+  }
+  40% {
+    transform: translate3d(9vw, 66vh, 0) rotate(300deg);
+  }
+  50% {
+    transform: translate3d(6vw, 42vh, 0) rotate(340deg);
+  }
+  60% {
+    transform: translate3d(14vw, 20vh, 0) rotate(388deg);
+  }
+  70% {
+    transform: translate3d(36vw, 8vh, 0) rotate(419deg);
+  }
+  80% {
+    transform: translate3d(62vw, 12vh, 0) rotate(447deg);
+  }
+  90% {
+    transform: translate3d(82vw, 28vh, 0) rotate(483deg);
+  }
+  100% {
+    transform: translate3d(90vw, 74vh, 0) rotate(550deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plane-bounce,
+  .plane-bounce-alt {
+    animation: none;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .cotizador-controls {
+    display: none !important;
+  }
+
+  .cotizador-print-shell {
+    border: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .cotizador-print-page {
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .cotizador-print-block {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  .cotizador-print-page .md\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+}

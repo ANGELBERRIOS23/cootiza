@@ -1,0 +1,8 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="800" fill="#E2E8F0"/>
+  <rect x="72" y="72" width="1056" height="656" rx="28" fill="#CBD5E1"/>
+  <path d="M180 590L365 405C392 378 436 378 463 405L622 564L738 449C765 422 809 422 836 449L1020 633H180V590Z" fill="#94A3B8"/>
+  <circle cx="410" cy="275" r="74" fill="#F8FAFC"/>
+  <text x="600" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" font-weight="700" fill="#475569">Imagen no disponible</text>
+  <text x="600" y="418" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" fill="#64748B">Pronto actualizaremos esta portada</text>
+</svg>
