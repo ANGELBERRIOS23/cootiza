@@ -2,6 +2,7 @@ import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { Card } from "@/components/ui";
 import { ModeSetting, RatioSetting } from "@/components/admin/settings-forms";
 import { StageEditor } from "@/components/admin/stage-editor";
+import { SyncNowButton } from "@/components/admin/sync-now-button";
 
 export const metadata = { title: "Configuración — Cooitza Admin" };
 
@@ -57,6 +58,18 @@ export default async function AdminConfigPage() {
 
       <Card className="p-5">
         <StageEditor stages={(stages ?? []) as { id: string; vxm_stage_code: string; display_name: string; is_won: boolean; is_terminal: boolean; display_order: number }[]} />
+      </Card>
+
+      <Card className="space-y-3 p-5">
+        <div>
+          <h2 className="text-sm font-bold text-slate-800">Sincronización con la plataforma (VXM)</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Las etapas y los puntos se traen del CRM una vez al día automáticamente. Las etapas solo
+            avanzan después de que un asesor convierte el lead en oportunidad dentro de VXM. Usá este
+            botón para forzar la sincronización al instante (pruebas o casos urgentes).
+          </p>
+        </div>
+        <SyncNowButton />
       </Card>
     </div>
   );

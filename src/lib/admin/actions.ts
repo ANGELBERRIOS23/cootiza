@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSessionProfile, isAdminRole } from "@/lib/auth/session";
 import { createCooitzaAdminClient } from "@/lib/db/cooitza-admin";
 import { sendEmail, emailLayout } from "@/lib/email/resend";
+import { syncPipeline, type SyncReport } from "@/lib/leads/sync";
 
 export type AdminResult = { ok: true } | { ok: false; error: string };
 
@@ -275,6 +276,31 @@ export async function updatePointsRatio(ratio: number): Promise<AdminResult> {
     await audit("points_ratio:update", "points_rules", "ratio", { ratio });
     revalidatePath("/admin/configuracion");
   });
+}
+
+// --- Sincronización manual del pipeline VXM ----------------------------------
+/**
+ * Fuerza una corrida de sincronización VXM→Cooitza al instante (mismo trabajo
+ * que el cron diario). Útil para pruebas y casos urgentes sin esperar al cron.
+ * Devuelve el reporte para mostrarlo en el panel.
+ */
+export async function runPipelineSync(): Promise<
+  { ok: true; report: SyncReport } | { ok: false; error: string }
+> {
+  try {
+    await requireAdmin();
+    const report = await syncPipeline();
+    await audit("pipeline:sync_manual", "lead_mirror", "sync", {
+      retried: report.retried,
+      stagesUpdated: report.stagesUpdated,
+      pointsAwarded: report.pointsAwarded,
+    });
+    revalidatePath("/admin");
+    revalidatePath("/admin/configuracion");
+    return { ok: true, report };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message || "No se pudo sincronizar." };
+  }
 }
 
 // --- Ajuste manual de puntos -------------------------------------------------
