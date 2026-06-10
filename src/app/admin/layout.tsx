@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSessionProfile, isAdminRole } from "@/lib/auth/session";
 import { SignOutButton } from "@/components/sign-out-button";
+import { AdminNav } from "@/components/admin/admin-nav";
 
 /**
  * Layout del panel admin. Verificación server-side:
@@ -28,6 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </div>
       </header>
+      <AdminNav />
       <main className="mx-auto max-w-5xl px-6 py-6">{children}</main>
     </div>
   );
