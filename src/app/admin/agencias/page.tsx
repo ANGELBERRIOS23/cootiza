@@ -3,6 +3,7 @@ import { Badge, Card, EmptyState } from "@/components/ui";
 import { ActionButton } from "@/components/admin/action-button";
 import { CreateAgencyForm } from "@/components/admin/create-agency-form";
 import { CreateSupervisorModal } from "@/components/admin/create-supervisor-modal";
+import { EditAgencyModal } from "@/components/admin/edit-agency-modal";
 import { setAgencyActive } from "@/lib/admin/agencies";
 
 export const metadata = { title: "Agencias — Cooitza Admin" };
@@ -76,6 +77,7 @@ export default async function AdminAgenciasPage() {
                     <span className="truncate text-sm font-medium text-slate-800">{a.name}</span>
                     <div className="flex items-center gap-2">
                       <Badge tone={a.is_active ? "green" : "neutral"}>{a.is_active ? "Activa" : "Inactiva"}</Badge>
+                      <EditAgencyModal agency={{ id: a.id, name: a.name, region: a.region }} />
                       <ActionButton action={setAgencyActive.bind(null, a.id, !a.is_active)} variant="ghost">
                         {a.is_active ? "Desactivar" : "Activar"}
                       </ActionButton>

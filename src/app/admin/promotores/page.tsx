@@ -6,7 +6,11 @@ import { ActionButton } from "@/components/admin/action-button";
 import { ImpersonateButton } from "@/components/admin/impersonate-button";
 import { CreatePromotersModal } from "@/components/admin/create-promoters-modal";
 import { CreateTeamModal } from "@/components/admin/create-team-modal";
+import { EditUserModal } from "@/components/admin/edit-user-modal";
 import { setPromoterStatus } from "@/lib/admin/actions";
+
+type UserRole = "promoter" | "supervisor" | "admin" | "superadmin";
+type UserStatus = "active" | "pending_approval" | "suspended";
 
 export const metadata = { title: "Promotores — Cooitza Admin" };
 
@@ -44,7 +48,7 @@ const roleLabel: Record<string, string> = {
 
 export default async function AdminPromotoresPage() {
   const supabase = await createCooitzaServerClient();
-  const [{ data }, { data: agencies }, { data: team }, { data: directory }] = await Promise.all([
+  const [{ data }, { data: agencies }, { data: team }, { data: directory }, { data: profiles }] = await Promise.all([
     supabase.rpc("admin_promoter_stats"),
     supabase.from("agencies").select("id, name, region").eq("is_active", true).order("name"),
     supabase
@@ -53,13 +57,32 @@ export default async function AdminPromotoresPage() {
       .in("role", ["admin", "superadmin", "supervisor"])
       .order("role"),
     supabase.rpc("admin_user_directory"),
+    supabase.from("profiles").select("id, full_name, phone, role, status, agency_id, supervised_region"),
   ]);
   const rows = ((data ?? []) as Stat[]).map((r) => ({ ...r, clients_count: Number(r.clients_count) }));
   const teamRows = (team ?? []) as TeamMember[];
+  const agenciesList = (agencies ?? []) as { id: string; name: string; region: string }[];
   // Mapa id → { email, provider } para mostrar correo y fuente (Google vs admin).
   const dir = new Map(
     ((directory ?? []) as { id: string; email: string; provider: string }[]).map((d) => [d.id, d]),
   );
+  // Mapa de perfiles para alimentar el modal de edición sin abrir el detalle.
+  const profileMap = new Map(
+    ((profiles ?? []) as { id: string; full_name: string | null; phone: string | null; role: string; status: string; agency_id: string | null; supervised_region: string | null }[]).map((p) => [p.id, p]),
+  );
+  const editUser = (id: string) => {
+    const p = profileMap.get(id);
+    return {
+      id,
+      full_name: p?.full_name ?? "",
+      email: dir.get(id)?.email ?? "",
+      phone: p?.phone ?? null,
+      role: (p?.role ?? "promoter") as UserRole,
+      status: (p?.status ?? "active") as UserStatus,
+      agency_id: p?.agency_id ?? null,
+      supervised_region: p?.supervised_region ?? null,
+    };
+  };
 
   const pending = rows.filter((p) => p.status === "pending_approval");
   const others = rows.filter((p) => p.status !== "pending_approval");
@@ -94,7 +117,8 @@ export default async function AdminPromotoresPage() {
                       </span>
                     </span>
                   </Link>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <EditUserModal user={editUser(p.id)} agencies={agenciesList} />
                     <ActionButton action={setPromoterStatus.bind(null, p.id, "active")} variant="primary">Aprobar</ActionButton>
                     <ActionButton action={setPromoterStatus.bind(null, p.id, "suspended")} variant="ghost" confirm="¿Rechazar este registro?">Rechazar</ActionButton>
                   </div>
@@ -127,7 +151,8 @@ export default async function AdminPromotoresPage() {
                   </Link>
                   <div className="text-sm font-semibold text-slate-600">{p.clients_count} <span className="text-xs font-normal text-slate-400">clientes</span></div>
                   <div className="text-sm font-bold text-amber-600">{p.points_balance}</div>
-                  <div className="flex justify-start gap-2 sm:justify-end">
+                  <div className="flex flex-wrap justify-start gap-2 sm:justify-end">
+                    <EditUserModal user={editUser(p.id)} agencies={agenciesList} />
                     {p.status === "active" ? (
                       <>
                         <ImpersonateButton promoterId={p.id} />
@@ -164,7 +189,10 @@ export default async function AdminPromotoresPage() {
                       </span>
                     </span>
                   </Link>
-                  <Badge tone={st.tone}>{st.label}</Badge>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge tone={st.tone}>{st.label}</Badge>
+                    <EditUserModal user={editUser(m.id)} agencies={agenciesList} />
+                  </div>
                 </li>
               );
             })}

@@ -36,6 +36,30 @@ export async function createAgency(input: unknown): Promise<AgencyResult> {
   }
 }
 
+const updateAgencySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().trim().min(2, "Nombre muy corto").max(120),
+  region: z.enum(REGIONS as unknown as [string, ...string[]]),
+});
+
+/** Editar nombre y región de una agencia. */
+export async function updateAgency(input: unknown): Promise<AgencyResult> {
+  try {
+    const admin = await requireAdmin();
+    const d = updateAgencySchema.parse(input);
+    const { error } = await admin.from("agencies").update({ name: d.name, region: d.region }).eq("id", d.id);
+    if (error) {
+      if (error.code === "23505") return { ok: false, error: "Ya existe una agencia con ese nombre." };
+      throw error;
+    }
+    await admin.from("audit_log").insert({ action: "agency:update", target_table: "agencies", target_id: d.id, after: { name: d.name, region: d.region } });
+    revalidatePath("/admin/agencias");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message || "No se pudo actualizar la agencia." };
+  }
+}
+
 export async function setAgencyActive(id: string, active: boolean): Promise<AgencyResult> {
   try {
     const admin = await requireAdmin();
