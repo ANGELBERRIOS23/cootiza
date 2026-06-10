@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { upsertReward } from "@/lib/admin/actions";
 import { Button, Field, inputClass } from "@/components/ui";
+import { ImageUpload } from "@/components/image-upload";
 
 /** Form de creación de premio. Compacto; se expande al tocar "Nuevo premio". */
 export function RewardForm() {
@@ -11,6 +12,7 @@ export function RewardForm() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,7 +22,7 @@ export function RewardForm() {
     const res = await upsertReward({
       title: String(form.get("title") ?? ""),
       description: String(form.get("description") ?? ""),
-      image_url: String(form.get("image_url") ?? ""),
+      image_url: imageUrl,
       points_cost: form.get("points_cost"),
       stock: String(form.get("stock") ?? ""),
       display_order: form.get("display_order") || 0,
@@ -29,6 +31,7 @@ export function RewardForm() {
     setSaving(false);
     if (res.ok) {
       (e.target as HTMLFormElement).reset();
+      setImageUrl("");
       setOpen(false);
       router.refresh();
     } else {
@@ -44,7 +47,10 @@ export function RewardForm() {
     <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
       <Field label="Título"><input name="title" required className={inputClass} placeholder="Ej. Audífonos inalámbricos" /></Field>
       <Field label="Descripción"><textarea name="description" rows={2} className={inputClass} /></Field>
-      <Field label="URL de imagen" hint="Opcional"><input name="image_url" type="url" className={inputClass} placeholder="https://…" /></Field>
+      <div>
+        <span className="mb-1 block text-sm font-medium text-slate-700">Imagen del premio</span>
+        <ImageUpload bucket="reward-images" pathPrefix="rewards" value={imageUrl} onChange={setImageUrl} variant="rect" />
+      </div>
       <div className="grid grid-cols-3 gap-3">
         <Field label="Costo (pts)"><input name="points_cost" type="number" min="1" required className={inputClass} /></Field>
         <Field label="Stock" hint="vacío = ilimitado"><input name="stock" type="number" min="0" className={inputClass} /></Field>

@@ -1,6 +1,8 @@
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { Badge, Card, EmptyState } from "@/components/ui";
 import { ActionButton } from "@/components/admin/action-button";
+import { ImpersonateButton } from "@/components/admin/impersonate-button";
+import { CreatePromotersModal } from "@/components/admin/create-promoters-modal";
 import { setPromoterStatus } from "@/lib/admin/actions";
 
 export const metadata = { title: "Promotores — Cooitza Admin" };
@@ -25,7 +27,10 @@ export default async function AdminPromotoresPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold text-slate-900">Promotores</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-slate-900">Promotores</h1>
+        <CreatePromotersModal />
+      </div>
 
       {pending.length > 0 ? (
         <Card className="border-amber-200 p-4">
@@ -67,11 +72,16 @@ export default async function AdminPromotoresPage() {
                   <div className="text-sm font-semibold text-slate-600">{p.points_balance} pts</div>
                   <div className="flex justify-start gap-2 sm:justify-end">
                     {p.role === "promoter" ? (
-                      p.status === "active" ? (
-                        <ActionButton action={() => setPromoterStatus(p.id, "suspended")} variant="ghost" confirm="¿Suspender a este promotor?">Suspender</ActionButton>
-                      ) : (
-                        <ActionButton action={() => setPromoterStatus(p.id, "active")} variant="primary">Activar</ActionButton>
-                      )
+                      <>
+                        {p.status === "active" ? (
+                          <>
+                            <ImpersonateButton promoterId={p.id} />
+                            <ActionButton action={() => setPromoterStatus(p.id, "suspended")} variant="ghost" confirm="¿Suspender a este promotor?">Suspender</ActionButton>
+                          </>
+                        ) : (
+                          <ActionButton action={() => setPromoterStatus(p.id, "active")} variant="primary">Activar</ActionButton>
+                        )}
+                      </>
                     ) : (
                       <span className="text-xs text-slate-300">—</span>
                     )}

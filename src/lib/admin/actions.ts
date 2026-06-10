@@ -12,7 +12,8 @@ export type AdminResult = { ok: true } | { ok: false; error: string };
 /** Verifica que el caller sea admin y devuelve el admin client (service_role). */
 async function requireAdmin() {
   const profile = await getSessionProfile();
-  if (!profile || !isAdminRole(profile.role)) {
+  // realRole: respeta el rol real aunque el admin esté impersonando a un promotor.
+  if (!profile || !isAdminRole(profile.realRole)) {
     throw new Error("No autorizado.");
   }
   return { profile, admin: createCooitzaAdminClient() };

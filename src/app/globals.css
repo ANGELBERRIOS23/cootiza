@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode por clase (.dark en <html>), no por prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -34,6 +37,42 @@ html,
 body {
   overflow-x: hidden;
 }
+
+/* ============================================================================
+ * Dark mode. La UI del portal/admin usa utilidades slate/white; en vez de
+ * editar cada página, remapeamos esas utilidades cuando <html> tiene .dark.
+ * Da un dark mode coherente en toda la app de inmediato. La landing pública
+ * usa colores propios (hex), así que no se ve afectada.
+ * ========================================================================== */
+.dark {
+  --background: #0b1220;
+  --foreground: #e6edf6;
+}
+.dark body {
+  background: radial-gradient(circle at top left, #0f1f3a 0%, #0b1220 45%, #0b1220 100%);
+}
+
+.dark .bg-white { background-color: #111c33 !important; }
+.dark .bg-slate-50 { background-color: #0d1730 !important; }
+.dark .bg-slate-100 { background-color: #0b1220 !important; }
+
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700 { color: #e6edf6 !important; }
+.dark .text-slate-600,
+.dark .text-slate-500 { color: #9fb0c6 !important; }
+.dark .text-slate-400 { color: #708199 !important; }
+.dark .text-slate-300 { color: #5b6b82 !important; }
+
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-300 { border-color: #26344d !important; }
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #26344d !important; }
+
+/* hovers claros → hover sutil oscuro */
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100:hover { background-color: #1a2742 !important; }
 
 h1,
 h2,

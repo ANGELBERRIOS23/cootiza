@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { isCatalogConfigured } from "@/lib/db/vxm-catalog";
+import { getPublishedPackages } from "@/lib/db/package-repository";
 import { Card, StatCard, Badge } from "@/components/ui";
 
 export const metadata = { title: "Panel — Cooitza Admin" };
@@ -9,7 +10,7 @@ export default async function AdminHomePage() {
   const supabase = await createCooitzaServerClient();
 
   // KPIs (admin ve todo por RLS). head:true = solo cuenta, sin traer filas.
-  const [promoters, pendingPromoters, leads, redemptionsPending, topPromoters] = await Promise.all([
+  const [promoters, pendingPromoters, leads, redemptionsPending, topPromoters, packages] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "promoter"),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "pending_approval"),
     supabase.from("lead_mirror").select("id", { count: "exact", head: true }),
@@ -20,13 +21,24 @@ export default async function AdminHomePage() {
       .eq("role", "promoter")
       .order("points_balance", { ascending: false })
       .limit(5),
+    getPublishedPackages(),
   ]);
+
+  const catalogConfigured = isCatalogConfigured();
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Panel de administración</h1>
+      {/* Encabezado con logo */}
+      <div className="flex items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-10 w-auto" />
+        <div>
+          <h1 className="text-2xl font-bold leading-tight text-slate-900">Panel de administración</h1>
+          <p className="text-sm text-slate-500">Portal de promotores · Cooitza × Viajexmundo</p>
+        </div>
+      </div>
 
-      {!isCatalogConfigured() ? (
+      {!catalogConfigured ? (
         <Card className="border-amber-200 bg-amber-50 p-4">
           <p className="text-sm text-amber-800">
             ⚠️ El catálogo de VXM aún no está conectado. Configurá <code>NEXT_PUBLIC_VXM_SUPABASE_*</code> en
@@ -35,11 +47,12 @@ export default async function AdminHomePage() {
         </Card>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <StatCard label="Promotores" value={promoters.count ?? 0} tone="brand" />
         <StatCard label="Pendientes" value={pendingPromoters.count ?? 0} tone="amber" sub="por aprobar" />
-        <StatCard label="Clientes" value={leads.count ?? 0} tone="slate" sub="leads registrados" />
+        <StatCard label="Clientes" value={leads.count ?? 0} tone="slate" sub="leads" />
         <StatCard label="Canjes" value={redemptionsPending.count ?? 0} tone="green" sub="por aprobar" />
+        <StatCard label="Paquetes" value={packages.length} tone="brand" sub="publicados" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -71,6 +84,35 @@ export default async function AdminHomePage() {
           </div>
         </Card>
       </div>
+
+      {/* Paquetes disponibles */}
+      <Card className="p-5">
+        <h2 className="mb-3 font-bold text-slate-800">Paquetes disponibles</h2>
+        {packages.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            {catalogConfigured
+              ? "No hay paquetes publicados (o la conexión con VXM aún no responde). Verificá la API key de VXM en Vercel."
+              : "Conectá VXM para ver el catálogo aquí."}
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {packages.slice(0, 8).map((p) => (
+              <div key={p.id} className="overflow-hidden rounded-xl border border-slate-200">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.coverImage || "/package-fallback.svg"}
+                  alt={p.name}
+                  className="h-24 w-full object-cover"
+                />
+                <div className="p-2">
+                  <p className="truncate text-xs font-semibold text-slate-700">{p.name}</p>
+                  <p className="text-[11px] text-slate-400">{p.destination}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

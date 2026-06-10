@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth/session";
-import { SignOutButton } from "@/components/sign-out-button";
 import { PortalNav } from "@/components/portal/portal-nav";
+import { UserMenu } from "@/components/user-menu";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 
 /**
  * Layout del portal del promotor. Verificación server-side en CADA request:
  *  - sin sesión → /login
  *  - status pending_approval → /cuenta-pendiente
  *  - status suspended → /cuenta-suspendida
- * Solo un promotor (o admin) con status 'active' ve el portal.
+ * Si un admin está impersonando, se muestra una barra para volver.
  */
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const profile = await getSessionProfile();
@@ -19,19 +20,23 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-dvh bg-slate-50">
+      {profile.impersonating ? <ImpersonationBanner name={profile.full_name} /> : null}
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-          <Link href="/portal" className="font-bold text-slate-900">
-            Cooitza
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2.5">
+          <Link href="/portal" className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-7 w-auto" />
           </Link>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-slate-500 sm:inline">{profile.full_name}</span>
-            <SignOutButton className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50" />
-          </div>
+          <UserMenu
+            name={profile.full_name || "Promotor"}
+            role={profile.impersonating ? "vista de promotor" : profile.role}
+            avatarUrl={profile.avatar_url}
+            profileHref="/portal/perfil"
+          />
         </div>
       </header>
       <PortalNav />
-      {/* pb-20 en móvil para no tapar contenido con la barra inferior fija */}
+      {/* pb-24 en móvil para no tapar contenido con la barra inferior fija */}
       <main className="mx-auto max-w-2xl px-4 py-6 pb-24 sm:pb-6">{children}</main>
     </div>
   );

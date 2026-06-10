@@ -2,19 +2,16 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Middleware: refresca el token de Supabase en cada request (necesario para
- * que las cookies de sesión no expiren) y protege las áreas privadas.
+ * Proxy (antes "middleware", renombrado en Next 16): refresca el token de
+ * Supabase en cada request y protege las áreas privadas.
  *
  * Reglas:
  *  - `/portal/*` requiere sesión.
  *  - `/admin/*`  requiere sesión (la verificación de ROL admin se hace además
  *    server-side en el layout de admin; aquí solo cortamos sin sesión).
  *  - Rutas públicas (`/`, `/paquetes`, `/login`, `/auth/*`) pasan libres.
- *
- * La verificación fina de rol/status vive en los layouts server-side; el
- * middleware solo evita renderizar áreas privadas sin sesión.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -26,9 +23,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
@@ -58,6 +53,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Corre en todo salvo assets estáticos e imágenes.
+  // Corre en todo salvo API y assets estáticos e imágenes.
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
