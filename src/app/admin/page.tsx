@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
+import { getSessionProfile } from "@/lib/auth/session";
 import { isCatalogConfigured } from "@/lib/db/vxm-catalog";
 import { getPublishedPackages } from "@/lib/db/package-repository";
 import { Card, StatCard, Badge } from "@/components/ui";
@@ -8,8 +9,8 @@ export const metadata = { title: "Panel — Cooitza Admin" };
 
 export default async function AdminHomePage() {
   const supabase = await createCooitzaServerClient();
+  const profile = await getSessionProfile();
 
-  // KPIs (admin ve todo por RLS). head:true = solo cuenta, sin traer filas.
   const [promoters, pendingPromoters, leads, redemptionsPending, topPromoters, packages] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "promoter"),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "pending_approval"),
@@ -25,16 +26,22 @@ export default async function AdminHomePage() {
   ]);
 
   const catalogConfigured = isCatalogConfigured();
+  const firstName = (profile?.full_name || "").split(" ")[0] || "admin";
 
   return (
     <div className="space-y-6">
-      {/* Encabezado con logo */}
-      <div className="flex items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-10 w-auto" />
-        <div>
-          <h1 className="text-2xl font-bold leading-tight text-slate-900">Panel de administración</h1>
-          <p className="text-sm text-slate-500">Portal de promotores · Cooitza × Viajexmundo</p>
+      {/* Hero de marca */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-600 to-[#0f2a43] p-6 text-white shadow-[0_20px_50px_-24px_rgba(15,42,67,0.7)] sm:p-8">
+        <div className="absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute -bottom-20 right-24 h-48 w-48 rounded-full bg-amber-300/20 blur-2xl" />
+        <div className="relative">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wider backdrop-blur">
+            Cooitza × Viajexmundo
+          </div>
+          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Hola, {firstName} 👋</h1>
+          <p className="mt-1 max-w-lg text-sm text-white/80">
+            Panel de administración del portal de promotores. Gestioná altas, canjes, premios y puntos.
+          </p>
         </div>
       </div>
 
@@ -48,26 +55,29 @@ export default async function AdminHomePage() {
       ) : null}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <StatCard label="Promotores" value={promoters.count ?? 0} tone="brand" />
-        <StatCard label="Pendientes" value={pendingPromoters.count ?? 0} tone="amber" sub="por aprobar" />
-        <StatCard label="Clientes" value={leads.count ?? 0} tone="slate" sub="leads" />
-        <StatCard label="Canjes" value={redemptionsPending.count ?? 0} tone="green" sub="por aprobar" />
-        <StatCard label="Paquetes" value={packages.length} tone="brand" sub="publicados" />
+        <StatCard label="Promotores" value={promoters.count ?? 0} tone="brand" icon="👥" />
+        <StatCard label="Pendientes" value={pendingPromoters.count ?? 0} tone="amber" sub="por aprobar" icon="⏳" />
+        <StatCard label="Clientes" value={leads.count ?? 0} tone="slate" sub="leads" icon="📇" />
+        <StatCard label="Canjes" value={redemptionsPending.count ?? 0} tone="gold" sub="por aprobar" icon="🎁" />
+        <StatCard label="Paquetes" value={packages.length} tone="brand" sub="publicados" icon="🧳" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
-          <h2 className="mb-3 font-bold text-slate-800">Top promotores por puntos</h2>
+          <h2 className="mb-3 flex items-center gap-2 font-bold text-slate-800">🏅 Top promotores por puntos</h2>
           {(topPromoters.data ?? []).length === 0 ? (
             <p className="text-sm text-slate-500">Aún no hay promotores con puntos.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {(topPromoters.data ?? []).map((p, i) => (
-                <li key={p.id} className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-sm text-slate-700">
-                    <span className="text-slate-400">{i + 1}.</span> {p.full_name}
+                <li key={p.id} className="flex items-center justify-between gap-3 rounded-xl px-2 py-1.5 hover:bg-slate-50">
+                  <span className="flex items-center gap-2.5 text-sm font-medium text-slate-700">
+                    <span className={`grid h-6 w-6 place-items-center rounded-full text-[11px] font-black ${i === 0 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"}`}>
+                      {i + 1}
+                    </span>
+                    {p.full_name}
                   </span>
-                  <Badge tone="green">{p.points_balance} pts</Badge>
+                  <Badge tone="gold">{p.points_balance} pts</Badge>
                 </li>
               ))}
             </ul>
@@ -75,19 +85,30 @@ export default async function AdminHomePage() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="mb-3 font-bold text-slate-800">Accesos</h2>
-          <div className="grid grid-cols-2 gap-2">
-            <Link href="/admin/promotores" className="rounded-xl border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-brand-300">👥 Promotores</Link>
-            <Link href="/admin/canjes" className="rounded-xl border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-brand-300">🎁 Canjes</Link>
-            <Link href="/admin/premios" className="rounded-xl border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-brand-300">🏆 Premios</Link>
-            <Link href="/admin/configuracion" className="rounded-xl border border-slate-200 p-3 text-sm font-semibold text-slate-700 hover:border-brand-300">⚙️ Configuración</Link>
+          <h2 className="mb-3 flex items-center gap-2 font-bold text-slate-800">⚡ Accesos rápidos</h2>
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              { href: "/admin/promotores", icon: "👥", label: "Promotores" },
+              { href: "/admin/canjes", icon: "🎁", label: "Canjes" },
+              { href: "/admin/premios", icon: "🏆", label: "Premios" },
+              { href: "/admin/configuracion", icon: "⚙️", label: "Configuración" },
+            ].map((a) => (
+              <Link
+                key={a.href}
+                href={a.href}
+                className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-sm font-semibold text-slate-700 transition hover:border-brand-300 hover:bg-white hover:shadow-sm"
+              >
+                <span className="text-lg">{a.icon}</span>
+                {a.label}
+              </Link>
+            ))}
           </div>
         </Card>
       </div>
 
       {/* Paquetes disponibles */}
       <Card className="p-5">
-        <h2 className="mb-3 font-bold text-slate-800">Paquetes disponibles</h2>
+        <h2 className="mb-3 flex items-center gap-2 font-bold text-slate-800">🧳 Paquetes disponibles</h2>
         {packages.length === 0 ? (
           <p className="text-sm text-slate-500">
             {catalogConfigured
@@ -100,17 +121,24 @@ export default async function AdminHomePage() {
               <Link
                 key={p.id}
                 href={`/paquetes/${p.slug}`}
-                className="group overflow-hidden rounded-xl border border-slate-200 transition hover:border-brand-300 hover:shadow-md"
+                className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={p.coverImage || "/package-fallback.svg"}
-                  alt={p.name}
-                  className="h-24 w-full object-cover transition group-hover:scale-[1.03]"
-                />
-                <div className="p-2">
-                  <p className="truncate text-xs font-semibold text-slate-700">{p.name}</p>
-                  <p className="text-[11px] text-slate-400">{p.destination}</p>
+                <div className="relative h-28 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.coverImage || "/package-fallback.svg"}
+                    alt={p.name}
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                  />
+                  {p.isOffer ? (
+                    <span className="absolute left-2 top-2 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-black text-amber-950">
+                      OFERTA
+                    </span>
+                  ) : null}
+                </div>
+                <div className="p-2.5">
+                  <p className="truncate text-xs font-bold text-slate-700">{p.name}</p>
+                  <p className="text-[11px] text-slate-400">📍 {p.destination}</p>
                 </div>
               </Link>
             ))}
