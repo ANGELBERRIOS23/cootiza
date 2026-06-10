@@ -1,9 +1,12 @@
 "use server";
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { getSessionProfile } from "@/lib/auth/session";
+import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { createCooitzaAdminClient } from "@/lib/db/cooitza-admin";
-import { pushLeadToVxm } from "@/lib/leads/sync";
+import { createVxmAdminClient } from "@/lib/db/vxm";
+import { pushLeadToVxm, isVxmAdminConfigured } from "@/lib/leads/sync";
 
 const leadSchema = z.object({
   client_name: z.string().trim().min(3, "Ingresá el nombre del cliente").max(120),
@@ -115,4 +118,73 @@ export async function createLead(input: unknown): Promise<CreateLeadResult> {
   });
 
   return { ok: true, duplicateWarning: Boolean(dup) };
+}
+
+// --- Editar datos del cliente (promotor) -------------------------------------
+const editClientSchema = z.object({
+  leadId: z.string().uuid(),
+  client_name: z.string().trim().min(3, "Ingresá el nombre del cliente").max(120),
+  client_phone: z.string().trim().min(8, "Teléfono inválido").max(20).regex(/^[+]?[\d\s-]+$/, "Teléfono inválido"),
+  client_email: z.string().trim().email("Correo inválido").optional().or(z.literal("")),
+  notes: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+export type EditClientResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * El promotor edita los DATOS de su cliente (nombre, teléfono, correo, notas).
+ * No puede eliminar (no hay policy DELETE). Validamos propiedad y escribimos con
+ * service_role (lead_mirror no tiene policy UPDATE para promotores). Si el lead
+ * ya se sincronizó a VXM, propaga los datos al cliente de VXM (best-effort).
+ */
+export async function updateLeadClient(input: unknown): Promise<EditClientResult> {
+  const parsed = editClientSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+  const d = parsed.data;
+
+  const supabase = await createCooitzaServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Tu sesión expiró." };
+
+  // Propiedad: RLS deja al promotor leer solo sus leads.
+  const { data: lead } = await supabase
+    .from("lead_mirror")
+    .select("id, promoter_id, vxm_lead_id")
+    .eq("id", d.leadId)
+    .maybeSingle();
+  if (!lead || lead.promoter_id !== user.id) return { ok: false, error: "No autorizado." };
+
+  const phone = normalizePhoneGT(d.client_phone);
+  const admin = createCooitzaAdminClient();
+  const { error } = await admin
+    .from("lead_mirror")
+    .update({
+      client_name: d.client_name,
+      client_phone: phone,
+      client_email: d.client_email || null,
+      notes: d.notes || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", d.leadId);
+  if (error) return { ok: false, error: "No se pudo guardar. Intentá de nuevo." };
+
+  // Propagar al cliente de VXM si ya se sincronizó (best-effort, no rompe el guardado).
+  if (lead.vxm_lead_id && isVxmAdminConfigured()) {
+    try {
+      const vxm = createVxmAdminClient();
+      const { data: vlead } = await vxm.from("crm_leads").select("client_id").eq("id", lead.vxm_lead_id).maybeSingle();
+      if (vlead?.client_id) {
+        await vxm
+          .from("clients")
+          .update({ full_name: d.client_name, phone: phone.replace(/^\+502/, ""), email: d.client_email || null })
+          .eq("id", vlead.client_id);
+      }
+    } catch (e) {
+      console.warn("[leads] propagar edición a VXM falló:", (e as Error).message);
+    }
+  }
+
+  revalidatePath(`/portal/mis-leads/${d.leadId}`);
+  revalidatePath("/portal/mis-leads");
+  return { ok: true };
 }

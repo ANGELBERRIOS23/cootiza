@@ -4,6 +4,7 @@ import { getSessionProfile } from "@/lib/auth/session";
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { getStageMap, stageTone } from "@/lib/leads/stages";
 import { Badge, Card } from "@/components/ui";
+import { EditMyClientModal } from "@/components/portal/edit-my-client-modal";
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -43,7 +44,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <p className="text-sm text-slate-500">{lead.client_phone}</p>
             {lead.client_email ? <p className="text-sm text-slate-500">{lead.client_email}</p> : null}
           </div>
-          <Badge tone={stageTone(meta)}>{meta?.display_name ?? "Registrado"}</Badge>
+          <div className="flex flex-col items-end gap-2">
+            <Badge tone={stageTone(meta)}>{meta?.display_name ?? "Registrado"}</Badge>
+            <EditMyClientModal
+              lead={{
+                id: lead.id,
+                client_name: lead.client_name,
+                client_phone: lead.client_phone,
+                client_email: lead.client_email,
+                notes: lead.notes,
+              }}
+            />
+          </div>
         </div>
         {lead.package_title ? (
           <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">🧳 {lead.package_title}</p>

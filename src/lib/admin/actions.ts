@@ -6,7 +6,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSessionProfile, isAdminRole } from "@/lib/auth/session";
 import { createCooitzaAdminClient } from "@/lib/db/cooitza-admin";
 import { sendEmail, emailLayout } from "@/lib/email/resend";
-import { syncPipeline, type SyncReport } from "@/lib/leads/sync";
+import { syncPipeline, isVxmAdminConfigured, type SyncReport } from "@/lib/leads/sync";
+import { createVxmAdminClient } from "@/lib/db/vxm";
 import { REGIONS } from "@/lib/regions";
 
 export type AdminResult = { ok: true } | { ok: false; error: string };
@@ -349,6 +350,57 @@ export async function updateUserProfile(input: unknown): Promise<AdminResult> {
     await audit("user:update", "profiles", d.id, { role: d.role, status: d.status, agency_id, supervised_region });
     revalidatePath("/admin/promotores");
     revalidatePath(`/admin/promotores/${d.id}`);
+  });
+}
+
+// --- Eliminar cliente (admin) — cascada Cooitza + VXM ------------------------
+/**
+ * Elimina un cliente del portal Cooitza Y de VXM (lead + oportunidades + hijos).
+ * Destructivo. En Cooitza: lead_stage_history cae por CASCADE y points_ledger
+ * queda con lead_id NULL (historial de puntos intacto). En VXM hay que borrar
+ * oportunidades/actividades antes del lead (FK NO ACTION). NO borra el cliente
+ * de VXM (clients) porque puede tener otros leads/historial.
+ */
+export async function deleteCooitzaClient(leadMirrorId: string): Promise<AdminResult> {
+  return wrap(async () => {
+    const { admin } = await requireAdmin();
+    const { data: lead } = await admin
+      .from("lead_mirror")
+      .select("id, vxm_lead_id, client_name")
+      .eq("id", leadMirrorId)
+      .maybeSingle();
+    if (!lead) throw new Error("Cliente no encontrado.");
+
+    // 1) Borrar en VXM si ya se sincronizó.
+    if (lead.vxm_lead_id && isVxmAdminConfigured()) {
+      const vxm = createVxmAdminClient();
+      const { data: opps } = await vxm.from("crm_opportunities").select("id").eq("lead_id", lead.vxm_lead_id);
+      const oppIds = (opps ?? []).map((o) => o.id as string);
+      if (oppIds.length > 0) {
+        await Promise.allSettled([
+          vxm.from("crm_activities").delete().in("opportunity_id", oppIds),
+          vxm.from("crm_follow_ups").delete().in("opportunity_id", oppIds),
+          vxm.from("crm_actions").delete().in("opportunity_id", oppIds),
+          vxm.from("crm_stage_transitions").delete().in("opportunity_id", oppIds),
+          vxm.from("crm_bookings").delete().in("opportunity_id", oppIds),
+          vxm.from("crm_messages").delete().in("opportunity_id", oppIds),
+        ]);
+        await vxm.from("crm_opportunities").delete().in("id", oppIds);
+      }
+      await vxm.from("crm_activities").delete().eq("lead_id", lead.vxm_lead_id);
+      const { error: leadErr } = await vxm.from("crm_leads").delete().eq("id", lead.vxm_lead_id);
+      if (leadErr) throw new Error("No se pudo eliminar el lead en VXM: " + leadErr.message);
+    }
+
+    // 2) Borrar el espejo en Cooitza (history CASCADE, ledger SET NULL).
+    const { error } = await admin.from("lead_mirror").delete().eq("id", leadMirrorId);
+    if (error) throw error;
+
+    await audit("client:delete_cascade", "lead_mirror", leadMirrorId, {
+      vxm_lead_id: lead.vxm_lead_id,
+      client_name: lead.client_name,
+    });
+    revalidatePath("/admin/clientes");
   });
 }
 

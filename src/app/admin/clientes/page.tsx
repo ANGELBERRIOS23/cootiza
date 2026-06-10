@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { getStageMap, stageTone } from "@/lib/leads/stages";
 import { Badge, Card, EmptyState, StatCard } from "@/components/ui";
+import { ActionButton } from "@/components/admin/action-button";
+import { deleteCooitzaClient } from "@/lib/admin/actions";
 
 export const metadata = { title: "Clientes — Cooitza Admin" };
 
@@ -95,7 +97,16 @@ export default async function AdminClientesPage() {
                         👤 {promoter}{r.package_title ? ` · 🧳 ${r.package_title}` : ""} · {fmt(r.created_at)}
                       </p>
                     </div>
-                    <Badge tone={stageTone(meta)}>{meta?.display_name ?? "Registrado"}</Badge>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Badge tone={stageTone(meta)}>{meta?.display_name ?? "Registrado"}</Badge>
+                      <ActionButton
+                        action={deleteCooitzaClient.bind(null, r.id)}
+                        variant="danger"
+                        confirm={`⚠️ DESTRUCTIVO: vas a eliminar a "${r.client_name}" del portal Cooitza Y del CRM de VXM (lead + oportunidades). Esta acción es irreversible. ¿Continuar?`}
+                      >
+                        Eliminar
+                      </ActionButton>
+                    </div>
                   </li>
                 );
               })}
