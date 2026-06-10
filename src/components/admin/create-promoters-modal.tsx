@@ -173,15 +173,18 @@ export function CreatePromotersModal({ agencies = [] }: { agencies?: Agency[] })
               </div>
             </div>
 
-            {agencies.length > 0 ? (
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-slate-700">Agencia <span className="font-normal text-slate-400">(se aplica a todos los de este lote)</span></span>
-                <select className={cn(inputClass, "py-2")} value={agencyId} onChange={(e) => setAgencyId(e.target.value)}>
-                  <option value="">Sin agencia</option>
-                  {agencies.map((a) => <option key={a.id} value={a.id}>{a.name} · {a.region}</option>)}
-                </select>
-              </label>
-            ) : null}
+            <label className="block">
+              <span className="mb-1 block text-sm font-semibold text-slate-700">Agencia <span className="font-normal text-slate-400">(se aplica a todos los de este lote)</span></span>
+              <select className={cn(inputClass, "py-2")} value={agencyId} onChange={(e) => setAgencyId(e.target.value)}>
+                <option value="">Sin agencia</option>
+                {agencies.map((a) => <option key={a.id} value={a.id}>{a.name} · {a.region}</option>)}
+              </select>
+              {agencies.length === 0 ? (
+                <span className="mt-1 block text-xs text-amber-600">
+                  No hay agencias creadas. Creá agencias en la sección <b>Agencias</b> para poder asignarlas.
+                </span>
+              ) : null}
+            </label>
 
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full min-w-[640px] text-sm">

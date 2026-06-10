@@ -1,6 +1,7 @@
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { Badge, Card, EmptyState } from "@/components/ui";
 import { RewardForm } from "@/components/admin/reward-form";
+import { RewardEdit } from "@/components/admin/reward-edit";
 import { ActionButton } from "@/components/admin/action-button";
 import { setRewardActive } from "@/lib/admin/actions";
 
@@ -10,7 +11,7 @@ export default async function AdminPremiosPage() {
   const supabase = await createCooitzaServerClient();
   const { data: rewards } = await supabase
     .from("rewards")
-    .select("id, title, image_url, points_cost, stock, is_active, display_order")
+    .select("id, title, description, image_url, points_cost, stock, is_active, display_order")
     .order("display_order")
     .order("created_at", { ascending: false });
 
@@ -47,6 +48,7 @@ export default async function AdminPremiosPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge tone={r.is_active ? "green" : "neutral"}>{r.is_active ? "Activo" : "Inactivo"}</Badge>
+                  <RewardEdit reward={r} />
                   <ActionButton action={setRewardActive.bind(null, r.id, !r.is_active)} variant="ghost">
                     {r.is_active ? "Desactivar" : "Activar"}
                   </ActionButton>

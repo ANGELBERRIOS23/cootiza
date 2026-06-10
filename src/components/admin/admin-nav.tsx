@@ -21,7 +21,7 @@ export function AdminNav() {
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
   return (
-    <nav className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/85 backdrop-blur-md">
+    <nav className="border-b border-slate-200/70 bg-white/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-5xl gap-0.5 overflow-x-auto px-4 py-1.5 sm:px-6">
         {items.map(({ href, label, Icon, exact }) => {
           const active = isActive(href, exact);
