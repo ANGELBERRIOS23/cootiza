@@ -41,8 +41,9 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPortal = path.startsWith("/portal");
   const isAdmin = path.startsWith("/admin");
+  const isSupervisor = path.startsWith("/supervisor");
 
-  if ((isPortal || isAdmin) && !user) {
+  if ((isPortal || isAdmin || isSupervisor) && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", path);

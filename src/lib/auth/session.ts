@@ -2,7 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 
-export type UserRole = "promoter" | "admin" | "superadmin";
+export type UserRole = "promoter" | "supervisor" | "admin" | "superadmin";
 export type UserStatus = "pending_approval" | "active" | "suspended";
 
 export const IMPERSONATION_COOKIE = "cooitza_imp";
@@ -90,4 +90,11 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
 
 export function isAdminRole(role: UserRole): boolean {
   return role === "admin" || role === "superadmin";
+}
+
+/** Ruta de inicio según el rol (admin → /admin, supervisor → /supervisor, resto → /portal). */
+export function homePathForRole(role: UserRole): string {
+  if (isAdminRole(role)) return "/admin";
+  if (role === "supervisor") return "/supervisor";
+  return "/portal";
 }

@@ -17,6 +17,8 @@ type Stat = {
   points_balance: number;
   clients_count: number;
   last_client_at: string | null;
+  agency_name: string | null;
+  region: string | null;
 };
 
 const statusBadge: Record<string, { label: string; tone: "green" | "amber" | "red" | "neutral" }> = {
@@ -27,7 +29,10 @@ const statusBadge: Record<string, { label: string; tone: "green" | "amber" | "re
 
 export default async function AdminPromotoresPage() {
   const supabase = await createCooitzaServerClient();
-  const { data } = await supabase.rpc("admin_promoter_stats");
+  const [{ data }, { data: agencies }] = await Promise.all([
+    supabase.rpc("admin_promoter_stats"),
+    supabase.from("agencies").select("id, name, region").eq("is_active", true).order("name"),
+  ]);
   const rows = ((data ?? []) as Stat[]).map((r) => ({ ...r, clients_count: Number(r.clients_count) }));
 
   const pending = rows.filter((p) => p.status === "pending_approval");
@@ -37,7 +42,7 @@ export default async function AdminPromotoresPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-black tracking-tight text-slate-900">Promotores</h1>
-        <CreatePromotersModal />
+        <CreatePromotersModal agencies={(agencies ?? []) as { id: string; name: string; region: string }[]} />
       </div>
 
       {pending.length > 0 ? (
@@ -76,7 +81,8 @@ export default async function AdminPromotoresPage() {
                     <Avatar name={p.full_name || "P"} url={p.avatar_url} size="sm" />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-slate-800">{p.full_name || "(sin nombre)"}</span>
-                      <span className="block sm:hidden"><Badge tone={st.tone}>{st.label}</Badge></span>
+                      <span className="block truncate text-xs text-slate-400">{p.agency_name ? `${p.agency_name} · ${p.region}` : "Sin agencia"}</span>
+                      <span className="mt-0.5 block sm:hidden"><Badge tone={st.tone}>{st.label}</Badge></span>
                     </span>
                   </Link>
                   <div className="text-sm font-semibold text-slate-600">{p.clients_count} <span className="text-xs font-normal text-slate-400">clientes</span></div>

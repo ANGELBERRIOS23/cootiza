@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
-import { isAdminRole } from "@/lib/auth/session";
+import { homePathForRole, type UserRole } from "@/lib/auth/session";
 
 const schema = z.object({
   email: z.string().email(),
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
   else if (profile.status === "pending_approval") dest = "/cuenta-pendiente";
   else {
     const next = parsed.data.next;
-    dest = next && next.startsWith("/") ? next : isAdminRole(profile.role as "promoter" | "admin" | "superadmin") ? "/admin" : "/portal";
+    dest = next && next.startsWith("/") ? next : homePathForRole(profile.role as UserRole);
   }
 
   return NextResponse.json({ redirect: dest });

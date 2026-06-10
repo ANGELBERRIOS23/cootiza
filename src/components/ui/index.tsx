@@ -7,21 +7,17 @@ import { cn } from "@/lib/cn";
  * Ligero (solo Tailwind), mobile-first, consistente en claro y oscuro.
  * ========================================================================== */
 
-// Sombra suave reutilizable (borde + elevación en dos capas).
-export const softShadow =
-  "shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_30px_-14px_rgba(15,23,42,0.18)]";
+// Borde fino + sombra apenas perceptible. Estética minimal/elegante.
+export const softShadow = "shadow-[0_1px_2px_rgba(2,6,23,0.05)]";
 
 // --- Button -----------------------------------------------------------------
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "gold";
 type ButtonSize = "sm" | "md" | "lg";
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary:
-    "bg-gradient-to-b from-brand-500 to-brand-600 text-white hover:from-brand-600 hover:to-brand-700 shadow-[0_6px_18px_-8px_rgba(15,132,128,0.7)] focus-visible:ring-brand-300",
-  gold:
-    "bg-gradient-to-b from-amber-400 to-amber-500 text-amber-950 hover:from-amber-500 hover:to-amber-600 shadow-[0_6px_18px_-8px_rgba(245,158,11,0.7)] focus-visible:ring-amber-300",
-  secondary:
-    "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 focus-visible:ring-slate-300",
+  primary: "bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-300",
+  gold: "bg-amber-500 text-amber-950 hover:bg-amber-600 focus-visible:ring-amber-300",
+  secondary: "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 focus-visible:ring-slate-300",
   ghost: "bg-transparent text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-300",
   danger: "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-300",
 };

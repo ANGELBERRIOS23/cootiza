@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
-import { getSessionProfile, isAdminRole } from "@/lib/auth/session";
+import { getSessionProfile, homePathForRole } from "@/lib/auth/session";
 
 /**
  * Callback de OAuth (Google). Supabase redirige acá con un `code` que
@@ -27,6 +27,6 @@ export async function GET(request: NextRequest) {
   if (profile.status === "suspended") return NextResponse.redirect(`${origin}/cuenta-suspendida`);
   if (profile.status === "pending_approval") return NextResponse.redirect(`${origin}/cuenta-pendiente`);
 
-  const dest = next && next.startsWith("/") ? next : isAdminRole(profile.role) ? "/admin" : "/portal";
+  const dest = next && next.startsWith("/") ? next : homePathForRole(profile.role);
   return NextResponse.redirect(`${origin}${dest}`);
 }

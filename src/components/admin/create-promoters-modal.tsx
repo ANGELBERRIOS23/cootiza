@@ -26,10 +26,13 @@ function fieldOf(header: string): keyof Row | null {
   return null;
 }
 
-export function CreatePromotersModal() {
+type Agency = { id: string; name: string; region: string };
+
+export function CreatePromotersModal({ agencies = [] }: { agencies?: Agency[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
+  const [agencyId, setAgencyId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<{ email: string; ok: boolean; error?: string; password?: string }[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -98,6 +101,7 @@ export function CreatePromotersModal() {
         email: r.email.trim(),
         password: r.password.trim() || randomPassword(),
         phone: r.phone.trim(),
+        agency_id: agencyId || null,
       }));
     if (clean.length === 0) {
       alert("Agregá al menos un promotor con nombre y correo.");
@@ -163,10 +167,20 @@ export function CreatePromotersModal() {
               <div>
                 <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => importFile(e.target.files?.[0])} />
                 <button onClick={() => fileRef.current?.click()} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                  📥 Importar CSV/Excel
+                  Importar CSV/Excel
                 </button>
               </div>
             </div>
+
+            {agencies.length > 0 ? (
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-slate-700">Agencia <span className="font-normal text-slate-400">(se aplica a todos los de este lote)</span></span>
+                <select className={cn(inputClass, "py-2")} value={agencyId} onChange={(e) => setAgencyId(e.target.value)}>
+                  <option value="">Sin agencia</option>
+                  {agencies.map((a) => <option key={a.id} value={a.id}>{a.name} · {a.region}</option>)}
+                </select>
+              </label>
+            ) : null}
 
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full min-w-[640px] text-sm">

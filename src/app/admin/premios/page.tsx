@@ -10,7 +10,7 @@ export default async function AdminPremiosPage() {
   const supabase = await createCooitzaServerClient();
   const { data: rewards } = await supabase
     .from("rewards")
-    .select("id, title, points_cost, stock, is_active, display_order")
+    .select("id, title, image_url, points_cost, stock, is_active, display_order")
     .order("display_order")
     .order("created_at", { ascending: false });
 
@@ -31,11 +31,19 @@ export default async function AdminPremiosPage() {
           <ul className="divide-y divide-slate-100">
             {rows.map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-800">{r.title}</p>
-                  <p className="text-xs text-slate-400">
-                    {r.points_cost} pts · {r.stock === null ? "stock ilimitado" : `${r.stock} en stock`}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={r.image_url || "/package-fallback.svg"}
+                    alt={r.title}
+                    className="h-12 w-16 shrink-0 rounded-lg border border-slate-200 object-cover"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-800">{r.title}</p>
+                    <p className="text-xs text-slate-400">
+                      {r.points_cost} pts · {r.stock === null ? "stock ilimitado" : `${r.stock} en stock`}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge tone={r.is_active ? "green" : "neutral"}>{r.is_active ? "Activo" : "Inactivo"}</Badge>

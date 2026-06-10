@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSessionProfile, isAdminRole } from "@/lib/auth/session";
+import { getSessionProfile, homePathForRole } from "@/lib/auth/session";
 import { LoginForm } from "./login-form";
 import { GoogleButton } from "./google-button";
 
@@ -22,7 +22,7 @@ export default async function LoginPage({
   if (profile) {
     if (profile.status === "suspended") redirect("/cuenta-suspendida");
     if (profile.status === "pending_approval") redirect("/cuenta-pendiente");
-    redirect(isAdminRole(profile.role) ? "/admin" : "/portal");
+    redirect(homePathForRole(profile.role));
   }
 
   return (
