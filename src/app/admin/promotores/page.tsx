@@ -43,8 +43,8 @@ export default async function AdminPromotoresPage() {
                   <p className="text-xs text-slate-400">{p.phone ?? "sin teléfono"}</p>
                 </div>
                 <div className="flex gap-2">
-                  <ActionButton action={() => setPromoterStatus(p.id, "active")} variant="primary">Aprobar</ActionButton>
-                  <ActionButton action={() => setPromoterStatus(p.id, "suspended")} variant="ghost" confirm="¿Rechazar este registro?">Rechazar</ActionButton>
+                  <ActionButton action={setPromoterStatus.bind(null, p.id, "active")} variant="primary">Aprobar</ActionButton>
+                  <ActionButton action={setPromoterStatus.bind(null, p.id, "suspended")} variant="ghost" confirm="¿Rechazar este registro?">Rechazar</ActionButton>
                 </div>
               </li>
             ))}
@@ -76,10 +76,10 @@ export default async function AdminPromotoresPage() {
                         {p.status === "active" ? (
                           <>
                             <ImpersonateButton promoterId={p.id} />
-                            <ActionButton action={() => setPromoterStatus(p.id, "suspended")} variant="ghost" confirm="¿Suspender a este promotor?">Suspender</ActionButton>
+                            <ActionButton action={setPromoterStatus.bind(null, p.id, "suspended")} variant="ghost" confirm="¿Suspender a este promotor?">Suspender</ActionButton>
                           </>
                         ) : (
-                          <ActionButton action={() => setPromoterStatus(p.id, "active")} variant="primary">Activar</ActionButton>
+                          <ActionButton action={setPromoterStatus.bind(null, p.id, "active")} variant="primary">Activar</ActionButton>
                         )}
                       </>
                     ) : (

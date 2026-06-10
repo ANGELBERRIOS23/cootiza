@@ -97,18 +97,22 @@ export default async function AdminHomePage() {
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {packages.slice(0, 8).map((p) => (
-              <div key={p.id} className="overflow-hidden rounded-xl border border-slate-200">
+              <Link
+                key={p.id}
+                href={`/paquetes/${p.slug}`}
+                className="group overflow-hidden rounded-xl border border-slate-200 transition hover:border-brand-300 hover:shadow-md"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={p.coverImage || "/package-fallback.svg"}
                   alt={p.name}
-                  className="h-24 w-full object-cover"
+                  className="h-24 w-full object-cover transition group-hover:scale-[1.03]"
                 />
                 <div className="p-2">
                   <p className="truncate text-xs font-semibold text-slate-700">{p.name}</p>
                   <p className="text-[11px] text-slate-400">{p.destination}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

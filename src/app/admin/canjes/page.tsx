@@ -44,8 +44,8 @@ export default async function AdminCanjesPage() {
         ) : (
           pending.map((r) => (
             <Row key={r.id} name={name(r)} reward={reward(r)} pts={r.points_cost_snapshot} date={r.created_at} badge={statusBadge[r.status]}>
-              <ActionButton action={() => approveRedemption(r.id)} variant="primary">Aprobar</ActionButton>
-              <ActionButton action={() => setRedemptionStatus(r.id, "rejected")} variant="ghost" confirm="¿Rechazar este canje?">Rechazar</ActionButton>
+              <ActionButton action={approveRedemption.bind(null, r.id)} variant="primary">Aprobar</ActionButton>
+              <ActionButton action={setRedemptionStatus.bind(null, r.id, "rejected", undefined)} variant="ghost" confirm="¿Rechazar este canje?">Rechazar</ActionButton>
             </Row>
           ))
         )}
@@ -55,8 +55,8 @@ export default async function AdminCanjesPage() {
         <Section title={`Aprobados — entregar (${approved.length})`}>
           {approved.map((r) => (
             <Row key={r.id} name={name(r)} reward={reward(r)} pts={r.points_cost_snapshot} date={r.created_at} badge={statusBadge[r.status]}>
-              <ActionButton action={() => setRedemptionStatus(r.id, "delivered")} variant="primary">Marcar entregado</ActionButton>
-              <ActionButton action={() => setRedemptionStatus(r.id, "cancelled")} variant="ghost" confirm="¿Cancelar? Se devuelven los puntos.">Cancelar</ActionButton>
+              <ActionButton action={setRedemptionStatus.bind(null, r.id, "delivered", undefined)} variant="primary">Marcar entregado</ActionButton>
+              <ActionButton action={setRedemptionStatus.bind(null, r.id, "cancelled", undefined)} variant="ghost" confirm="¿Cancelar? Se devuelven los puntos.">Cancelar</ActionButton>
             </Row>
           ))}
         </Section>

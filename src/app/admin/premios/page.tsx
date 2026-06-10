@@ -39,7 +39,7 @@ export default async function AdminPremiosPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge tone={r.is_active ? "green" : "neutral"}>{r.is_active ? "Activo" : "Inactivo"}</Badge>
-                  <ActionButton action={() => setRewardActive(r.id, !r.is_active)} variant="ghost">
+                  <ActionButton action={setRewardActive.bind(null, r.id, !r.is_active)} variant="ghost">
                     {r.is_active ? "Desactivar" : "Activar"}
                   </ActionButton>
                 </div>
