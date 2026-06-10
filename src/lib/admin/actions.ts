@@ -2,8 +2,10 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSessionProfile, isAdminRole } from "@/lib/auth/session";
 import { createCooitzaAdminClient } from "@/lib/db/cooitza-admin";
+import { sendEmail, emailLayout } from "@/lib/email/resend";
 
 export type AdminResult = { ok: true } | { ok: false; error: string };
 
@@ -14,6 +16,18 @@ async function requireAdmin() {
     throw new Error("No autorizado.");
   }
   return { profile, admin: createCooitzaAdminClient() };
+}
+
+/** Resuelve el email (auth.users) + nombre (profiles) de un promotor. */
+async function promoterContact(
+  admin: SupabaseClient,
+  promoterId: string,
+): Promise<{ email: string | null; name: string }> {
+  const [{ data: u }, { data: p }] = await Promise.all([
+    admin.auth.admin.getUserById(promoterId),
+    admin.from("profiles").select("full_name").eq("id", promoterId).maybeSingle(),
+  ]);
+  return { email: u?.user?.email ?? null, name: (p?.full_name as string) || "promotor" };
 }
 
 async function audit(action: string, target_table: string, target_id: string, after?: unknown) {
@@ -55,6 +69,29 @@ export async function setPromoterStatus(
       .eq("id", promoterId);
     if (error) throw error;
     await audit(`promoter_status:${status}`, "profiles", promoterId, { status });
+
+    // Aviso al promotor cuando se activa su cuenta (degradación: si no hay
+    // Resend configurado, no pasa nada). Nunca bloquea la acción principal.
+    if (status === "active") {
+      try {
+        const { email, name } = await promoterContact(admin, promoterId);
+        if (email) {
+          const url = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+          await sendEmail({
+            to: email,
+            subject: "Tu acceso al Portal de Promotores está activo",
+            html: emailLayout({
+              heading: `¡Hola ${name}!`,
+              body: "Tu cuenta fue aprobada. Ya podés ingresar al portal, registrar clientes y empezar a sumar puntos por cada venta.",
+              ctaText: "Ingresar al portal",
+              ctaHref: `${url}/login`,
+            }),
+          });
+        }
+      } catch {
+        /* el email es best-effort */
+      }
+    }
     revalidatePath("/admin/promotores");
   });
 }
@@ -68,6 +105,32 @@ export async function approveRedemption(redemptionId: string): Promise<AdminResu
     const { error } = await admin.rpc("approve_redemption", { p_redemption_id: redemptionId });
     if (error) throw error;
     await audit("redemption:approve", "redemptions", redemptionId);
+
+    // Aviso al promotor (best-effort, degradable).
+    try {
+      const { data: red } = await admin
+        .from("redemptions")
+        .select("promoter_id, rewards(title)")
+        .eq("id", redemptionId)
+        .maybeSingle();
+      if (red?.promoter_id) {
+        const { email, name } = await promoterContact(admin, red.promoter_id);
+        const rw = red.rewards as { title?: string } | { title?: string }[] | null;
+        const title = (Array.isArray(rw) ? rw[0]?.title : rw?.title) ?? "tu premio";
+        if (email) {
+          await sendEmail({
+            to: email,
+            subject: "Tu canje fue aprobado 🎉",
+            html: emailLayout({
+              heading: `¡Felicidades ${name}!`,
+              body: `Tu canje de <strong>${title}</strong> fue aprobado. El equipo se pondrá en contacto para coordinar la entrega.`,
+            }),
+          });
+        }
+      }
+    } catch {
+      /* best-effort */
+    }
     revalidatePath("/admin/canjes");
   });
 }

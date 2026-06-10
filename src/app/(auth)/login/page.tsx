@@ -13,6 +13,10 @@ export default async function LoginPage({
 }) {
   const { next } = await searchParams;
 
+  // Google OAuth se muestra solo si está habilitado (degradación elegante:
+  // sin el flag el portal funciona perfecto solo con correo/contraseña).
+  const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+
   // Si ya hay sesión activa, mandar al destino correcto.
   const profile = await getSessionProfile();
   if (profile) {
@@ -30,13 +34,16 @@ export default async function LoginPage({
         </div>
 
         <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <GoogleButton next={next} />
-
-          <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs text-slate-400">o con tu correo</span>
-            <span className="h-px flex-1 bg-slate-200" />
-          </div>
+          {googleEnabled ? (
+            <>
+              <GoogleButton next={next} />
+              <div className="flex items-center gap-3">
+                <span className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs text-slate-400">o con tu correo</span>
+                <span className="h-px flex-1 bg-slate-200" />
+              </div>
+            </>
+          ) : null}
 
           <LoginForm next={next} />
         </div>

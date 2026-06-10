@@ -94,6 +94,13 @@ export function PublicHome({ variant = "default" }: PublicHomeProps) {
                     Hablar por WhatsApp
                   </Link>
                 </div>
+
+                <Link
+                  href="/login"
+                  className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-[#0B4EA2] underline underline-offset-4 transition hover:text-[#0a438c]"
+                >
+                  ¿Sos promotor? Ingresá al portal →
+                </Link>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
