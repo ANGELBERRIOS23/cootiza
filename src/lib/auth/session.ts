@@ -16,13 +16,15 @@ export type SessionProfile = {
   status: UserStatus;
   points_balance: number;
   avatar_url: string | null;
+  /** Agencia asignada (null = aún no completó onboarding). */
+  agency_id: string | null;
   /** true cuando un admin está viendo el portal como este promotor. */
   impersonating: boolean;
   /** rol real del usuario logueado (no el impersonado). */
   realRole: UserRole;
 };
 
-const SELECT = "id, full_name, phone, role, status, points_balance, avatar_url";
+const SELECT = "id, full_name, phone, role, status, points_balance, avatar_url, agency_id";
 
 /**
  * Lee la sesión actual (cookies) y su profile desde la BD de Cooitza.
@@ -67,6 +69,7 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
           status: imp.status as UserStatus,
           points_balance: imp.points_balance,
           avatar_url: imp.avatar_url ?? null,
+          agency_id: imp.agency_id ?? null,
           impersonating: true,
           realRole,
         };
@@ -83,6 +86,7 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
     status: real.status as UserStatus,
     points_balance: real.points_balance,
     avatar_url: real.avatar_url ?? null,
+    agency_id: real.agency_id ?? null,
     impersonating: false,
     realRole,
   };

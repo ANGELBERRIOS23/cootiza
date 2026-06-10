@@ -7,6 +7,7 @@ import { Avatar } from "@/components/avatar";
 import { AdjustPointsForm } from "@/components/admin/adjust-points-form";
 import { ImpersonateButton } from "@/components/admin/impersonate-button";
 import { PromoterCodeEditor } from "@/components/admin/promoter-code-editor";
+import { EditUserModal } from "@/components/admin/edit-user-modal";
 
 export const metadata = { title: "Promotor — Cooitza Admin" };
 
@@ -27,8 +28,8 @@ export default async function PromoterDetailPage({ params }: { params: Promise<{
   const { id } = await params;
   const supabase = await createCooitzaServerClient();
 
-  const [{ data: promoter }, { data: leads }, { data: ledger }, stageMap] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, phone, role, status, points_balance, avatar_url, vxm_promoter_code, created_at").eq("id", id).maybeSingle(),
+  const [{ data: promoter }, { data: leads }, { data: ledger }, { data: agencies }, { data: directory }, stageMap] = await Promise.all([
+    supabase.from("profiles").select("id, full_name, phone, role, status, points_balance, avatar_url, vxm_promoter_code, agency_id, supervised_region, created_at").eq("id", id).maybeSingle(),
     supabase
       .from("lead_mirror")
       .select("id, client_name, client_phone, package_title, current_stage, created_at")
@@ -41,10 +42,14 @@ export default async function PromoterDetailPage({ params }: { params: Promise<{
       .eq("promoter_id", id)
       .order("created_at", { ascending: false })
       .limit(10),
+    supabase.from("agencies").select("id, name, region").eq("is_active", true).order("name"),
+    supabase.rpc("admin_user_directory"),
     getStageMap(),
   ]);
 
   if (!promoter) notFound();
+
+  const email = ((directory ?? []) as { id: string; email: string }[]).find((d) => d.id === id)?.email ?? null;
 
   const clients = leads ?? [];
   const moves = ledger ?? [];
@@ -66,11 +71,27 @@ export default async function PromoterDetailPage({ params }: { params: Promise<{
               <h1 className="text-xl font-black tracking-tight text-slate-900">{promoter.full_name || "(sin nombre)"}</h1>
               <Badge tone={st.tone}>{st.label}</Badge>
             </div>
-            <p className="text-sm text-slate-500">{promoter.phone ?? "Sin teléfono"}</p>
+            <p className="text-sm text-slate-500">
+              {email ?? "Sin correo"}{promoter.phone ? ` · ${promoter.phone}` : ""}
+            </p>
           </div>
-          {promoter.role === "promoter" && promoter.status === "active" ? (
-            <ImpersonateButton promoterId={promoter.id} />
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <EditUserModal
+              user={{
+                id: promoter.id,
+                full_name: promoter.full_name,
+                phone: promoter.phone,
+                role: promoter.role,
+                status: promoter.status,
+                agency_id: promoter.agency_id ?? null,
+                supervised_region: promoter.supervised_region ?? null,
+              }}
+              agencies={(agencies ?? []) as { id: string; name: string; region: string }[]}
+            />
+            {promoter.role === "promoter" && promoter.status === "active" ? (
+              <ImpersonateButton promoterId={promoter.id} />
+            ) : null}
+          </div>
         </div>
         <div className="mt-3 border-t border-slate-100 pt-3">
           <PromoterCodeEditor promoterId={promoter.id} current={promoter.vxm_promoter_code ?? null} />

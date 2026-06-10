@@ -148,3 +148,45 @@ export async function createSupervisor(input: unknown): Promise<CreatePromoterRe
     return { ok: false, error: friendly((e as Error).message) };
   }
 }
+
+// --- Administradores ---------------------------------------------------------
+const adminSchema = z.object({
+  full_name: z.string().trim().min(2, "Nombre muy corto").max(120),
+  email: z.string().trim().toLowerCase().email("Correo inválido"),
+  password: z.string().min(6, "Mínimo 6 caracteres").max(72),
+});
+
+/** Crea un administrador, activo. Solo un admin/superadmin puede hacerlo. */
+export async function createAdmin(input: unknown): Promise<CreatePromoterResult> {
+  try {
+    const { admin } = await requireAdmin();
+    const d = adminSchema.parse(input);
+
+    const { data: created, error } = await admin.auth.admin.createUser({
+      email: d.email,
+      password: d.password,
+      email_confirm: true,
+      user_metadata: { full_name: d.full_name },
+    });
+    if (error || !created.user) throw new Error(error?.message || "No se pudo crear el usuario.");
+
+    const uid = created.user.id;
+    const { error: upErr } = await admin.from("profiles").upsert(
+      { id: uid, full_name: d.full_name, role: "admin", status: "active" },
+      { onConflict: "id" },
+    );
+    if (upErr) throw upErr;
+
+    await admin.from("audit_log").insert({
+      action: "admin:create",
+      target_table: "profiles",
+      target_id: uid,
+      after: { email: d.email, full_name: d.full_name },
+    });
+
+    revalidatePath("/admin/promotores");
+    return { ok: true, id: uid };
+  } catch (e) {
+    return { ok: false, error: friendly((e as Error).message) };
+  }
+}

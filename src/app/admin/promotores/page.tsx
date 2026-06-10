@@ -5,6 +5,7 @@ import { Avatar } from "@/components/avatar";
 import { ActionButton } from "@/components/admin/action-button";
 import { ImpersonateButton } from "@/components/admin/impersonate-button";
 import { CreatePromotersModal } from "@/components/admin/create-promoters-modal";
+import { CreateTeamModal } from "@/components/admin/create-team-modal";
 import { setPromoterStatus } from "@/lib/admin/actions";
 
 export const metadata = { title: "Promotores — Cooitza Admin" };
@@ -43,7 +44,7 @@ const roleLabel: Record<string, string> = {
 
 export default async function AdminPromotoresPage() {
   const supabase = await createCooitzaServerClient();
-  const [{ data }, { data: agencies }, { data: team }] = await Promise.all([
+  const [{ data }, { data: agencies }, { data: team }, { data: directory }] = await Promise.all([
     supabase.rpc("admin_promoter_stats"),
     supabase.from("agencies").select("id, name, region").eq("is_active", true).order("name"),
     supabase
@@ -51,9 +52,14 @@ export default async function AdminPromotoresPage() {
       .select("id, full_name, avatar_url, role, status")
       .in("role", ["admin", "superadmin", "supervisor"])
       .order("role"),
+    supabase.rpc("admin_user_directory"),
   ]);
   const rows = ((data ?? []) as Stat[]).map((r) => ({ ...r, clients_count: Number(r.clients_count) }));
   const teamRows = (team ?? []) as TeamMember[];
+  // Mapa id → { email, provider } para mostrar correo y fuente (Google vs admin).
+  const dir = new Map(
+    ((directory ?? []) as { id: string; email: string; provider: string }[]).map((d) => [d.id, d]),
+  );
 
   const pending = rows.filter((p) => p.status === "pending_approval");
   const others = rows.filter((p) => p.status !== "pending_approval");
@@ -62,25 +68,39 @@ export default async function AdminPromotoresPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-black tracking-tight text-slate-900">Promotores</h1>
-        <CreatePromotersModal agencies={(agencies ?? []) as { id: string; name: string; region: string }[]} />
+        <div className="flex flex-wrap gap-2">
+          <CreateTeamModal agencies={(agencies ?? []) as { id: string; name: string; region: string }[]} />
+          <CreatePromotersModal agencies={(agencies ?? []) as { id: string; name: string; region: string }[]} />
+        </div>
       </div>
 
       {pending.length > 0 ? (
         <Card className="border-amber-200 bg-amber-50/60 p-4">
           <h2 className="mb-2 text-sm font-bold text-amber-800">Pendientes de aprobación ({pending.length})</h2>
           <ul className="divide-y divide-amber-100">
-            {pending.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
-                <Link href={`/admin/promotores/${p.id}`} className="flex min-w-0 items-center gap-2.5 hover:underline">
-                  <Avatar name={p.full_name || "P"} url={p.avatar_url} size="sm" />
-                  <span className="truncate text-sm font-medium text-slate-800">{p.full_name || "(sin nombre)"}</span>
-                </Link>
-                <div className="flex gap-2">
-                  <ActionButton action={setPromoterStatus.bind(null, p.id, "active")} variant="primary">Aprobar</ActionButton>
-                  <ActionButton action={setPromoterStatus.bind(null, p.id, "suspended")} variant="ghost" confirm="¿Rechazar este registro?">Rechazar</ActionButton>
-                </div>
-              </li>
-            ))}
+            {pending.map((p) => {
+              const info = dir.get(p.id);
+              return (
+                <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                  <Link href={`/admin/promotores/${p.id}`} className="flex min-w-0 items-center gap-2.5 hover:underline">
+                    <Avatar name={p.full_name || "P"} url={p.avatar_url} size="sm" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-slate-800">{p.full_name || "(sin nombre)"}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-xs text-slate-500">{info?.email ?? "—"}</span>
+                        {info?.provider === "google" ? (
+                          <Badge tone="neutral">vía Google</Badge>
+                        ) : null}
+                      </span>
+                    </span>
+                  </Link>
+                  <div className="flex gap-2">
+                    <ActionButton action={setPromoterStatus.bind(null, p.id, "active")} variant="primary">Aprobar</ActionButton>
+                    <ActionButton action={setPromoterStatus.bind(null, p.id, "suspended")} variant="ghost" confirm="¿Rechazar este registro?">Rechazar</ActionButton>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </Card>
       ) : null}
@@ -134,13 +154,16 @@ export default async function AdminPromotoresPage() {
               const st = statusBadge[m.status] ?? { label: m.status, tone: "neutral" as const };
               return (
                 <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                  <div className="flex min-w-0 items-center gap-2.5">
+                  <Link href={`/admin/promotores/${m.id}`} className="flex min-w-0 items-center gap-2.5 hover:underline">
                     <Avatar name={m.full_name || "U"} url={m.avatar_url} size="sm" />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-slate-800">{m.full_name || "(sin nombre)"}</span>
-                      <span className="block truncate text-xs text-slate-400">{roleLabel[m.role] ?? m.role}</span>
+                      <span className="block truncate text-xs text-slate-400">
+                        {roleLabel[m.role] ?? m.role}
+                        {dir.get(m.id)?.email ? ` · ${dir.get(m.id)!.email}` : ""}
+                      </span>
                     </span>
-                  </div>
+                  </Link>
                   <Badge tone={st.tone}>{st.label}</Badge>
                 </li>
               );

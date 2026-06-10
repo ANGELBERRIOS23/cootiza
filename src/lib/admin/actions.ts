@@ -7,6 +7,7 @@ import { getSessionProfile, isAdminRole } from "@/lib/auth/session";
 import { createCooitzaAdminClient } from "@/lib/db/cooitza-admin";
 import { sendEmail, emailLayout } from "@/lib/email/resend";
 import { syncPipeline, type SyncReport } from "@/lib/leads/sync";
+import { REGIONS } from "@/lib/regions";
 
 export type AdminResult = { ok: true } | { ok: false; error: string };
 
@@ -301,6 +302,54 @@ export async function runPipelineSync(): Promise<
   } catch (e) {
     return { ok: false, error: (e as Error).message || "No se pudo sincronizar." };
   }
+}
+
+// --- Editar perfil de usuario (admin) ----------------------------------------
+const updateProfileSchema = z.object({
+  id: z.string().uuid(),
+  full_name: z.string().trim().min(2, "Nombre muy corto").max(120),
+  phone: z.string().trim().max(20).optional().or(z.literal("")),
+  role: z.enum(["promoter", "supervisor", "admin", "superadmin"]),
+  status: z.enum(["active", "pending_approval", "suspended"]),
+  agency_id: z.string().uuid().nullable().optional(),
+  supervised_region: z.enum(REGIONS as unknown as [string, ...string[]]).nullable().optional(),
+});
+
+/**
+ * Edita el perfil de cualquier usuario (admin). service_role pasa el trigger
+ * guard_profile_privilege. Normaliza agency/región según el rol resultante.
+ */
+export async function updateUserProfile(input: unknown): Promise<AdminResult> {
+  return wrap(async () => {
+    const { admin } = await requireAdmin();
+    const d = updateProfileSchema.parse(input);
+
+    let agency_id: string | null = d.agency_id ?? null;
+    let supervised_region: string | null = d.supervised_region ?? null;
+    if (d.role === "admin" || d.role === "superadmin") {
+      agency_id = null;
+      supervised_region = null;
+    } else if (d.role === "promoter") {
+      supervised_region = null; // un promotor pertenece a una agencia, no supervisa región
+    }
+
+    const { error } = await admin
+      .from("profiles")
+      .update({
+        full_name: d.full_name,
+        phone: d.phone || null,
+        role: d.role,
+        status: d.status,
+        agency_id,
+        supervised_region,
+      })
+      .eq("id", d.id);
+    if (error) throw error;
+
+    await audit("user:update", "profiles", d.id, { role: d.role, status: d.status, agency_id, supervised_region });
+    revalidatePath("/admin/promotores");
+    revalidatePath(`/admin/promotores/${d.id}`);
+  });
 }
 
 // --- Ajuste manual de puntos -------------------------------------------------

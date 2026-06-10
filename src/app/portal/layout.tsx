@@ -18,6 +18,11 @@ export default async function PortalLayout({ children }: { children: React.React
   if (!profile) redirect("/login");
   if (profile.status === "pending_approval") redirect("/cuenta-pendiente");
   if (profile.status === "suspended") redirect("/cuenta-suspendida");
+  // Onboarding obligatorio: promotor aprobado sin agencia debe completar su
+  // perfil antes de usar el portal. (No aplica cuando un admin impersona.)
+  if (profile.role === "promoter" && !profile.impersonating && !profile.agency_id) {
+    redirect("/completar-perfil");
+  }
 
   return (
     <div className="min-h-dvh bg-slate-50">
