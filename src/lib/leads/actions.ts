@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { getSessionProfile } from "@/lib/auth/session";
 import { createCooitzaAdminClient } from "@/lib/db/cooitza-admin";
-import { createVxmAdminClient } from "@/lib/db/vxm";
+import { pushLeadToVxm } from "@/lib/leads/sync";
 
 const leadSchema = z.object({
   client_name: z.string().trim().min(3, "Ingresá el nombre del cliente").max(120),
@@ -102,8 +102,9 @@ export async function createLead(input: unknown): Promise<CreateLeadResult> {
     return { ok: false, error: "No se pudo registrar el cliente. Intentá de nuevo." };
   }
 
-  // Intentar enviar a VXM (degradación: si no está configurado, queda pending).
-  await tryPushLeadToVxm(mirror.id, {
+  // Intentar enviar a VXM (degradación: si no está configurado, queda pending
+  // y el cron de sync lo reintenta — el promotor nunca pierde el lead).
+  await pushLeadToVxm(mirror.id, {
     client_name: data.client_name,
     client_phone: phone,
     client_email: data.client_email || null,
@@ -114,72 +115,4 @@ export async function createLead(input: unknown): Promise<CreateLeadResult> {
   });
 
   return { ok: true, duplicateWarning: Boolean(dup) };
-}
-
-async function tryPushLeadToVxm(
-  mirrorId: string,
-  lead: { client_name: string; client_phone: string; client_email: string | null; notes: string | null; promoter_code: string },
-) {
-  if (!process.env.VXM_SUPABASE_SERVICE_ROLE_KEY || !process.env.NEXT_PUBLIC_VXM_SUPABASE_URL) {
-    return; // VXM no configurado — degradación elegante.
-  }
-  const vxm = createVxmAdminClient();
-  const cooitza = createCooitzaAdminClient();
-
-  // Resolver/crear cliente en VXM por teléfono.
-  let clientId: string | null = null;
-  const { data: existing } = await vxm
-    .from("clients")
-    .select("id")
-    .eq("phone", lead.client_phone.replace(/^\+502/, ""))
-    .limit(1)
-    .maybeSingle();
-  if (existing?.id) {
-    clientId = existing.id;
-  } else {
-    const { data: created } = await vxm
-      .from("clients")
-      .insert({ full_name: lead.client_name, phone: lead.client_phone, email: lead.client_email })
-      .select("id")
-      .single();
-    clientId = created?.id ?? null;
-  }
-
-  // Asignación: manual (null) | random (asesor activo aleatorio).
-  const { data: modeRow } = await cooitza
-    .from("app_settings")
-    .select("value")
-    .eq("key", "lead_assignment_mode")
-    .maybeSingle();
-  const mode = String(modeRow?.value ?? "manual").replace(/"/g, "");
-  let assignedTo: string | null = null;
-  if (mode === "random") {
-    const { data: advisors } = await vxm
-      .from("profiles")
-      .select("id")
-      .eq("crm_access", true)
-      .limit(100);
-    if (advisors && advisors.length > 0) {
-      assignedTo = advisors[Math.floor(Math.random() * advisors.length)].id;
-    }
-  }
-
-  const { data: vxmLead } = await vxm
-    .from("crm_leads")
-    .insert({
-      client_id: clientId,
-      status: "NUEVO",
-      source: "COOITZA",
-      assigned_to: assignedTo,
-      notes: lead.notes,
-    })
-    .select("id")
-    .single();
-
-  if (vxmLead?.id) {
-    await cooitza
-      .from("lead_mirror")
-      .update({ vxm_lead_id: vxmLead.id, sync_status: "confirmed", updated_at: new Date().toISOString() })
-      .eq("id", mirrorId);
-  }
 }
