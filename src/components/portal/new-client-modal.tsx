@@ -29,6 +29,7 @@ export function NewClientModal({ packages }: { packages: PickerPackage[] }) {
   const [query, setQuery] = useState("");
   const [state, setState] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [consent, setConsent] = useState(false);
 
   const selected = packages.find((p) => p.id === pkgId) ?? null;
   const filtered = useMemo(() => {
@@ -39,7 +40,7 @@ export function NewClientModal({ packages }: { packages: PickerPackage[] }) {
 
   function reset() {
     setName(""); setPhone(""); setEmail(""); setNotes(""); setPkgId(null); setQuery("");
-    setState("idle"); setMessage(null);
+    setState("idle"); setMessage(null); setConsent(false);
   }
   function close() { setOpen(false); reset(); }
 
@@ -140,9 +141,17 @@ export function NewClientModal({ packages }: { packages: PickerPackage[] }) {
               <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{message}</p>
             ) : null}
 
+            <label className="flex items-start gap-2 text-xs text-slate-500">
+              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600" />
+              <span>
+                Confirmo que el cliente autorizó compartir sus datos con Viajexmundo.{" "}
+                <a href="/privacidad" target="_blank" rel="noreferrer" className="text-brand-600 underline">Aviso de privacidad</a>.
+              </span>
+            </label>
+
             <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
               <Button variant="ghost" onClick={close}>Cancelar</Button>
-              <Button onClick={submit} disabled={state === "saving" || !name.trim() || !phone.trim()}>
+              <Button onClick={submit} disabled={state === "saving" || !name.trim() || !phone.trim() || !consent}>
                 {state === "saving" ? "Registrando…" : "Registrar cliente"}
               </Button>
             </div>

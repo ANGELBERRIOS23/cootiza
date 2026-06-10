@@ -17,6 +17,7 @@ export function LeadForm({
 }) {
   const [state, setState] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [consent, setConsent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -92,7 +93,15 @@ export function LeadForm({
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{message}</p>
       ) : null}
 
-      <Button type="submit" disabled={state === "saving"} className="w-full">
+      <label className="flex items-start gap-2 text-xs text-slate-500">
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600" />
+        <span>
+          Confirmo que el cliente autorizó compartir sus datos con Viajexmundo para recibir asesoría de viaje.{" "}
+          <a href="/privacidad" target="_blank" rel="noreferrer" className="text-brand-600 underline">Aviso de privacidad</a>.
+        </span>
+      </label>
+
+      <Button type="submit" disabled={state === "saving" || !consent} className="w-full">
         {state === "saving" ? "Registrando…" : "Registrar cliente interesado"}
       </Button>
     </form>

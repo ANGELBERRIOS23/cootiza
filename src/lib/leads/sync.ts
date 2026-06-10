@@ -165,8 +165,9 @@ export async function syncPipeline(): Promise<SyncReport> {
   // Etapas ganadas (config-driven desde pipeline_stage_map).
   const { data: stageMap } = await cooitza
     .from("pipeline_stage_map")
-    .select("vxm_stage_code, is_won");
+    .select("vxm_stage_code, display_name, is_won");
   const wonCodes = new Set((stageMap ?? []).filter((s) => s.is_won).map((s) => s.vxm_stage_code));
+  const stageLabel = new Map((stageMap ?? []).map((s) => [s.vxm_stage_code, s.display_name as string]));
 
   // Ratio de puntos vigente.
   const { data: rule } = await cooitza
@@ -180,7 +181,7 @@ export async function syncPipeline(): Promise<SyncReport> {
 
   const { data: tracked } = await cooitza
     .from("lead_mirror")
-    .select("id, promoter_id, vxm_lead_id, vxm_opportunity_id, current_stage, points_awarded")
+    .select("id, promoter_id, vxm_lead_id, vxm_opportunity_id, current_stage, points_awarded, client_name")
     .not("vxm_lead_id", "is", null)
     .limit(1000);
 
@@ -210,6 +211,14 @@ export async function syncPipeline(): Promise<SyncReport> {
         updates.current_stage = opp.stage;
         updates.stage_updated_at = nowIso;
         report.stagesUpdated++;
+        // Notificar al promotor el avance de su cliente.
+        await cooitza.from("notifications").insert({
+          user_id: lm.promoter_id,
+          title: "Tu cliente avanzó de etapa",
+          body: `${lm.client_name ?? "Tu cliente"} ahora está en “${stageLabel.get(opp.stage) ?? opp.stage}”.`,
+          kind: "stage",
+          link: `/portal/mis-leads/${lm.id}`,
+        });
       }
 
       if (Object.keys(updates).length > 0) {
@@ -238,6 +247,13 @@ export async function syncPipeline(): Promise<SyncReport> {
           });
           if (!ledgerErr) {
             await cooitza.from("lead_mirror").update({ points_awarded: true }).eq("id", lm.id);
+            await cooitza.from("notifications").insert({
+              user_id: lm.promoter_id,
+              title: `¡Ganaste ${pts} puntos! ⭐`,
+              body: `Se cerró la venta de ${lm.client_name ?? "tu cliente"}.`,
+              kind: "points",
+              link: "/portal/puntos",
+            });
             report.pointsAwarded++;
             report.pointsTotal += pts;
           } else if (ledgerErr.code === "23505") {

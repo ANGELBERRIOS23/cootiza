@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth/session";
 import { PortalNav } from "@/components/portal/portal-nav";
 import { UserMenu } from "@/components/user-menu";
+import { NotificationBell } from "@/components/notification-bell";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 
 /**
@@ -27,12 +28,15 @@ export default async function PortalLayout({ children }: { children: React.React
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-7 w-auto" />
           </Link>
-          <UserMenu
-            name={profile.full_name || "Promotor"}
-            role={profile.impersonating ? "vista de promotor" : profile.role}
-            avatarUrl={profile.avatar_url}
-            profileHref="/portal/perfil"
-          />
+          <div className="flex items-center gap-1">
+            <NotificationBell userId={profile.id} />
+            <UserMenu
+              name={profile.full_name || "Promotor"}
+              role={profile.impersonating ? "vista de promotor" : profile.role}
+              avatarUrl={profile.avatar_url}
+              profileHref="/portal/perfil"
+            />
+          </div>
         </div>
       </header>
       <PortalNav />

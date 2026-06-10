@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Building2, Contact, Gift, Trophy, Settings, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, Building2, Contact, Gift, Trophy, Settings, ScrollText, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const items: { href: string; label: string; Icon: LucideIcon; exact?: boolean }[] = [
@@ -12,6 +12,7 @@ const items: { href: string; label: string; Icon: LucideIcon; exact?: boolean }[
   { href: "/admin/clientes", label: "Clientes", Icon: Contact },
   { href: "/admin/canjes", label: "Canjes", Icon: Gift },
   { href: "/admin/premios", label: "Premios", Icon: Trophy },
+  { href: "/admin/auditoria", label: "Auditoría", Icon: ScrollText },
   { href: "/admin/configuracion", label: "Configuración", Icon: Settings },
 ];
 

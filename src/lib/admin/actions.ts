@@ -97,6 +97,20 @@ export async function setPromoterStatus(
   });
 }
 
+/** Asignar/editar el código del promotor en VXM (vxm_promoter_code, único). */
+export async function setPromoterVxmCode(promoterId: string, code: string): Promise<AdminResult> {
+  return wrap(async () => {
+    const { admin } = await requireAdmin();
+    const { error } = await admin.from("profiles").update({ vxm_promoter_code: code.trim() || null }).eq("id", promoterId);
+    if (error) {
+      if (error.code === "23505") throw new Error("Ese código ya está asignado a otro promotor.");
+      throw error;
+    }
+    await audit("promoter:vxm_code", "profiles", promoterId, { code: code.trim() || null });
+    revalidatePath(`/admin/promotores/${promoterId}`);
+  });
+}
+
 // --- Canjes ------------------------------------------------------------------
 export async function approveRedemption(redemptionId: string): Promise<AdminResult> {
   return wrap(async () => {
@@ -118,6 +132,13 @@ export async function approveRedemption(redemptionId: string): Promise<AdminResu
         const { email, name } = await promoterContact(admin, red.promoter_id);
         const rw = red.rewards as { title?: string } | { title?: string }[] | null;
         const title = (Array.isArray(rw) ? rw[0]?.title : rw?.title) ?? "tu premio";
+        await admin.from("notifications").insert({
+          user_id: red.promoter_id,
+          title: "Canje aprobado 🎉",
+          body: `Tu canje de ${title} fue aprobado.`,
+          kind: "redemption",
+          link: "/portal/premios",
+        });
         if (email) {
           await sendEmail({
             to: email,
@@ -165,6 +186,16 @@ export async function setRedemptionStatus(
       .update({ status, admin_notes: adminNotes ?? null, handled_by: profile.id, handled_at: new Date().toISOString() })
       .eq("id", redemptionId);
     if (error) throw error;
+
+    if (red?.promoter_id) {
+      const msg: Record<string, { title: string; body: string }> = {
+        rejected: { title: "Canje rechazado", body: adminNotes || "Tu solicitud de canje fue rechazada." },
+        cancelled: { title: "Canje cancelado", body: "Tu canje fue cancelado y los puntos fueron devueltos." },
+        delivered: { title: "Premio entregado 🎁", body: "Tu premio fue marcado como entregado." },
+      };
+      const m = msg[status];
+      if (m) await admin.from("notifications").insert({ user_id: red.promoter_id, ...m, kind: "redemption", link: "/portal/premios" });
+    }
     await audit(`redemption:${status}`, "redemptions", redemptionId);
     revalidatePath("/admin/canjes");
   });

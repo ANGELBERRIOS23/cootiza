@@ -5,6 +5,7 @@ import { getStageMap, stageTone } from "@/lib/leads/stages";
 import { getPublishedPackages } from "@/lib/db/package-repository";
 import { Badge, Card, EmptyState, ButtonLink } from "@/components/ui";
 import { NewClientModal } from "@/components/portal/new-client-modal";
+import { LeadsRealtime } from "@/components/portal/leads-realtime";
 
 export const metadata = { title: "Mis clientes — Portal Cooitza" };
 
@@ -45,6 +46,7 @@ export default async function MisLeadsPage() {
 
   return (
     <div className="space-y-4">
+      <LeadsRealtime promoterId={profile!.id} />
       <header className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Mis clientes</h1>

@@ -6,6 +6,7 @@ import { Badge, Card, EmptyState, StatCard } from "@/components/ui";
 import { Avatar } from "@/components/avatar";
 import { AdjustPointsForm } from "@/components/admin/adjust-points-form";
 import { ImpersonateButton } from "@/components/admin/impersonate-button";
+import { PromoterCodeEditor } from "@/components/admin/promoter-code-editor";
 
 export const metadata = { title: "Promotor — Cooitza Admin" };
 
@@ -27,7 +28,7 @@ export default async function PromoterDetailPage({ params }: { params: Promise<{
   const supabase = await createCooitzaServerClient();
 
   const [{ data: promoter }, { data: leads }, { data: ledger }, stageMap] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, phone, role, status, points_balance, avatar_url, created_at").eq("id", id).maybeSingle(),
+    supabase.from("profiles").select("id, full_name, phone, role, status, points_balance, avatar_url, vxm_promoter_code, created_at").eq("id", id).maybeSingle(),
     supabase
       .from("lead_mirror")
       .select("id, client_name, client_phone, package_title, current_stage, created_at")
@@ -70,6 +71,9 @@ export default async function PromoterDetailPage({ params }: { params: Promise<{
           {promoter.role === "promoter" && promoter.status === "active" ? (
             <ImpersonateButton promoterId={promoter.id} />
           ) : null}
+        </div>
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <PromoterCodeEditor promoterId={promoter.id} current={promoter.vxm_promoter_code ?? null} />
         </div>
       </Card>
 

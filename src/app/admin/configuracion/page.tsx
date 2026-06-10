@@ -1,6 +1,7 @@
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { Card } from "@/components/ui";
 import { ModeSetting, RatioSetting } from "@/components/admin/settings-forms";
+import { StageEditor } from "@/components/admin/stage-editor";
 
 export const metadata = { title: "Configuración — Cooitza Admin" };
 
@@ -12,9 +13,10 @@ function val(settings: { key: string; value: unknown }[], key: string, fallback:
 
 export default async function AdminConfigPage() {
   const supabase = await createCooitzaServerClient();
-  const [{ data: settings }, { data: rule }] = await Promise.all([
+  const [{ data: settings }, { data: rule }, { data: stages }] = await Promise.all([
     supabase.from("app_settings").select("key, value"),
     supabase.from("points_rules").select("points_per_q_yield").eq("is_active", true).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("pipeline_stage_map").select("id, vxm_stage_code, display_name, is_won, is_terminal, display_order").order("display_order"),
   ]);
 
   const s = settings ?? [];
@@ -51,6 +53,10 @@ export default async function AdminConfigPage() {
         />
         <hr className="border-slate-100" />
         <RatioSetting current={ratio} />
+      </Card>
+
+      <Card className="p-5">
+        <StageEditor stages={(stages ?? []) as { id: string; vxm_stage_code: string; display_name: string; is_won: boolean; is_terminal: boolean; display_order: number }[]} />
       </Card>
     </div>
   );
