@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BackLink } from "@/components/back-link";
 import { SafeImage } from "@/components/safe-image";
 import { WhatsAppLeadCard } from "@/components/whatsapp-lead-card";
 import { appConfig } from "@/lib/config";
@@ -26,9 +26,7 @@ export default async function PackageDetailPage({ params }: PackagePageProps) {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
-        <Link href="/paquetes" className="text-sm font-medium text-[#3C4F66] hover:text-[#2E3D4E]">
-          {"<-"} Volver a paquetes
-        </Link>
+        <BackLink label="Volver a paquetes" className="text-sm font-medium text-[#3C4F66] hover:text-[#2E3D4E]" />
 
         <div className="mt-4 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="relative h-64 w-full sm:h-80">
