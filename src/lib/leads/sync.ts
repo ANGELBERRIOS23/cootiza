@@ -46,6 +46,42 @@ export async function pushLeadToVxm(
   if (!isVxmAdminConfigured()) return; // degradación elegante
   const vxm = createVxmAdminClient();
   const cooitza = createCooitzaAdminClient();
+  const markFailed = (msg: string) =>
+    cooitza
+      .from("lead_mirror")
+      .update({ sync_status: "failed", updated_at: new Date().toISOString() })
+      .eq("id", mirrorId)
+      .then(() => {
+        throw new Error(msg);
+      });
+
+  // Asesores con CRM (para asignación y para el dueño por defecto del cliente).
+  const { data: advisors } = await vxm
+    .from("profiles")
+    .select("id, role")
+    .eq("crm_access", true)
+    .limit(200);
+  const advisorIds = (advisors ?? []).map((a) => a.id as string);
+
+  // Modo de asignación (config en Cooitza app_settings).
+  const { data: modeRow } = await cooitza
+    .from("app_settings")
+    .select("value")
+    .eq("key", "lead_assignment_mode")
+    .maybeSingle();
+  const mode = String(modeRow?.value ?? "manual").replace(/"/g, "");
+  let assignedTo: string | null = null;
+  if (mode === "random" && advisorIds.length > 0) {
+    assignedTo = advisorIds[Math.floor(Math.random() * advisorIds.length)];
+  }
+
+  // Dueño del cliente: clients.owner_user_id es NOT NULL. Prioridad:
+  //   asesor asignado → VXM_DEFAULT_OWNER_ID (env) → primer admin con CRM → primer asesor.
+  const adminOwner = (advisors ?? []).find((a) => a.role === "admin" || a.role === "superadmin")?.id as
+    | string
+    | undefined;
+  const ownerId =
+    assignedTo ?? process.env.VXM_DEFAULT_OWNER_ID ?? adminOwner ?? advisorIds[0] ?? null;
 
   // Resolver/crear cliente en VXM por teléfono (sin el prefijo +502).
   let clientId: string | null = null;
@@ -59,31 +95,23 @@ export async function pushLeadToVxm(
   if (existing?.id) {
     clientId = existing.id;
   } else {
-    const { data: created } = await vxm
+    if (!ownerId) {
+      return markFailed("VXM no tiene asesores con CRM para asignar como dueño del cliente.");
+    }
+    const { data: created, error: clientErr } = await vxm
       .from("clients")
-      .insert({ full_name: lead.client_name, phone: lead.client_phone, email: lead.client_email })
+      .insert({
+        full_name: lead.client_name,
+        phone: localPhone,
+        email: lead.client_email,
+        owner_user_id: ownerId,
+      })
       .select("id")
       .single();
-    clientId = created?.id ?? null;
-  }
-
-  // Modo de asignación (config en Cooitza app_settings).
-  const { data: modeRow } = await cooitza
-    .from("app_settings")
-    .select("value")
-    .eq("key", "lead_assignment_mode")
-    .maybeSingle();
-  const mode = String(modeRow?.value ?? "manual").replace(/"/g, "");
-  let assignedTo: string | null = null;
-  if (mode === "random") {
-    const { data: advisors } = await vxm
-      .from("profiles")
-      .select("id")
-      .eq("crm_access", true)
-      .limit(100);
-    if (advisors && advisors.length > 0) {
-      assignedTo = advisors[Math.floor(Math.random() * advisors.length)].id;
+    if (clientErr || !created?.id) {
+      return markFailed(clientErr?.message ?? "VXM no creó el cliente.");
     }
+    clientId = created.id;
   }
 
   const { data: vxmLead, error: leadErr } = await vxm
@@ -99,11 +127,7 @@ export async function pushLeadToVxm(
     .single();
 
   if (leadErr || !vxmLead?.id) {
-    await cooitza
-      .from("lead_mirror")
-      .update({ sync_status: "failed", updated_at: new Date().toISOString() })
-      .eq("id", mirrorId);
-    throw new Error(leadErr?.message ?? "VXM no devolvió id de lead.");
+    return markFailed(leadErr?.message ?? "VXM no devolvió id de lead.");
   }
 
   await cooitza
