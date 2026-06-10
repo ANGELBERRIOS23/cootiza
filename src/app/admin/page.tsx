@@ -61,7 +61,7 @@ export default async function AdminHomePage() {
         </Card>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Promotores" value={promoters.count ?? 0} tone="brand" icon={<Users className="h-5 w-5" />} />
         <StatCard label="Pendientes" value={pendingPromoters.count ?? 0} tone="amber" sub="por aprobar" icon={<Clock className="h-5 w-5" />} />
         <StatCard label="Clientes" value={leads.count ?? 0} tone="slate" sub="leads" icon={<Contact className="h-5 w-5" />} />

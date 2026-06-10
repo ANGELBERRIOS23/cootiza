@@ -80,6 +80,7 @@ export default async function PromoterDetailPage({ params }: { params: Promise<{
               user={{
                 id: promoter.id,
                 full_name: promoter.full_name,
+                email,
                 phone: promoter.phone,
                 role: promoter.role,
                 status: promoter.status,

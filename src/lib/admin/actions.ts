@@ -252,6 +252,23 @@ export async function setRewardActive(rewardId: string, isActive: boolean): Prom
   });
 }
 
+// --- Asesores VXM elegibles para leads de Cooitza ----------------------------
+/**
+ * Lista EN VIVO los asesores de la plataforma VXM (cuentas con CRM o admin).
+ * Se usa para elegir en Configuración quiénes reciben + son notificados de los
+ * leads de Cooitza. Si VXM no está configurado, devuelve [].
+ */
+export async function listVxmAdvisors(): Promise<{ id: string; full_name: string }[]> {
+  await requireAdmin();
+  if (!isVxmAdminConfigured()) return [];
+  const vxm = createVxmAdminClient();
+  const { data } = await vxm.from("profiles").select("id, full_name, role, crm_access");
+  return ((data ?? []) as { id: string; full_name: string | null; role: string; crm_access: boolean }[])
+    .filter((p) => p.crm_access || p.role === "admin" || p.role === "superadmin")
+    .map((p) => ({ id: p.id, full_name: p.full_name || "Asesor" }))
+    .sort((a, b) => a.full_name.localeCompare(b.full_name));
+}
+
 // --- Configuración + reglas de puntos ----------------------------------------
 export async function updateSetting(key: string, value: unknown): Promise<AdminResult> {
   return wrap(async () => {
@@ -309,6 +326,7 @@ export async function runPipelineSync(): Promise<
 const updateProfileSchema = z.object({
   id: z.string().uuid(),
   full_name: z.string().trim().min(2, "Nombre muy corto").max(120),
+  email: z.string().trim().toLowerCase().email("Correo inválido").optional().or(z.literal("")),
   phone: z.string().trim().max(20).optional().or(z.literal("")),
   role: z.enum(["promoter", "supervisor", "admin", "superadmin"]),
   status: z.enum(["active", "pending_approval", "suspended"]),
@@ -334,6 +352,18 @@ export async function updateUserProfile(input: unknown): Promise<AdminResult> {
       supervised_region = null; // un promotor pertenece a una agencia, no supervisa región
     }
 
+    // El correo vive en auth.users → se cambia con la admin API (no en profiles).
+    if (d.email) {
+      const { error: emailErr } = await admin.auth.admin.updateUserById(d.id, {
+        email: d.email,
+        email_confirm: true,
+      });
+      if (emailErr) {
+        const m = emailErr.message.toLowerCase();
+        throw new Error(m.includes("already") || m.includes("registered") ? "Ese correo ya está en uso por otra cuenta." : emailErr.message);
+      }
+    }
+
     const { error } = await admin
       .from("profiles")
       .update({
@@ -347,7 +377,7 @@ export async function updateUserProfile(input: unknown): Promise<AdminResult> {
       .eq("id", d.id);
     if (error) throw error;
 
-    await audit("user:update", "profiles", d.id, { role: d.role, status: d.status, agency_id, supervised_region });
+    await audit("user:update", "profiles", d.id, { role: d.role, status: d.status, agency_id, supervised_region, email_changed: Boolean(d.email) });
     revalidatePath("/admin/promotores");
     revalidatePath(`/admin/promotores/${d.id}`);
   });

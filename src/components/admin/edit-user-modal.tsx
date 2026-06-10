@@ -12,6 +12,7 @@ type Agency = { id: string; name: string; region: string };
 type User = {
   id: string;
   full_name: string | null;
+  email: string | null;
   phone: string | null;
   role: "promoter" | "supervisor" | "admin" | "superadmin";
   status: "active" | "pending_approval" | "suspended";
@@ -19,11 +20,12 @@ type User = {
   supervised_region: string | null;
 };
 
-/** Editar el perfil de un usuario (nombre, teléfono, rol, estado, agencia/región). */
+/** Editar el perfil de un usuario (nombre, correo, teléfono, rol, estado, agencia/región). */
 export function EditUserModal({ user, agencies }: { user: User; agencies: Agency[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState(user.full_name ?? "");
+  const [email, setEmail] = useState(user.email ?? "");
   const [phone, setPhone] = useState(user.phone ?? "");
   const [role, setRole] = useState<User["role"]>(user.role);
   const [status, setStatus] = useState<User["status"]>(user.status);
@@ -38,6 +40,7 @@ export function EditUserModal({ user, agencies }: { user: User; agencies: Agency
     const res = await updateUserProfile({
       id: user.id,
       full_name: fullName,
+      email,
       phone,
       role,
       status,
@@ -73,6 +76,7 @@ export function EditUserModal({ user, agencies }: { user: User; agencies: Agency
         </div>
         <div className="space-y-3 p-5">
           <Field label="Nombre completo"><input value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} /></Field>
+          <Field label="Correo" hint="cambia el correo de acceso"><input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className={inputClass} /></Field>
           <Field label="Teléfono"><input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} /></Field>
 
           <div className="grid grid-cols-2 gap-3">

@@ -35,7 +35,9 @@ body {
 
 html,
 body {
-  overflow-x: hidden;
+  /* `clip` evita el scroll horizontal SIN crear un contenedor de scroll, que es
+   * lo que rompía `position: sticky` (el menú no se quedaba fijo arriba). */
+  overflow-x: clip;
 }
 
 /* ============================================================================
@@ -55,6 +57,16 @@ body {
 .dark .bg-white { background-color: #111c33 !important; }
 .dark .bg-slate-50 { background-color: #0d1730 !important; }
 .dark .bg-slate-100 { background-color: #0b1220 !important; }
+
+/* Variantes translúcidas (navbars con backdrop-blur, sheets) — el remapeo de
+ * `bg-white` no las cubría, por eso la barra de navegación quedaba casi blanca. */
+.dark .bg-white\/70 { background-color: rgb(17 28 51 / 0.70) !important; }
+.dark .bg-white\/80 { background-color: rgb(17 28 51 / 0.80) !important; }
+.dark .bg-white\/85 { background-color: rgb(17 28 51 / 0.85) !important; }
+.dark .bg-white\/90 { background-color: rgb(17 28 51 / 0.90) !important; }
+.dark .bg-white\/95 { background-color: rgb(17 28 51 / 0.95) !important; }
+.dark .bg-slate-50\/60 { background-color: rgb(13 23 48 / 0.60) !important; }
+.dark .bg-slate-50\/90 { background-color: rgb(13 23 48 / 0.90) !important; }
 
 .dark .text-slate-900,
 .dark .text-slate-800,

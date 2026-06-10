@@ -190,8 +190,8 @@ export function StatCard({
 }) {
   const t = statTones[tone] ?? statTones.brand;
   return (
-    <Card className="p-4">
-      <div className="flex items-start gap-3">
+    <Card className="p-5">
+      <div className="flex items-start gap-3.5">
         {icon ? (
           <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg", t.chip)}>
             {icon}
@@ -199,8 +199,8 @@ export function StatCard({
         ) : null}
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-          <p className={cn("mt-0.5 text-2xl font-black leading-none tabular-nums", t.value)}>{value}</p>
-          {sub ? <p className="mt-1 text-xs text-slate-500">{sub}</p> : null}
+          <p className={cn("mt-1.5 text-2xl font-black leading-none tabular-nums", t.value)}>{value}</p>
+          {sub ? <p className="mt-1.5 text-xs text-slate-500">{sub}</p> : null}
         </div>
       </div>
     </Card>

@@ -63,16 +63,19 @@ export async function pushLeadToVxm(
     .limit(200);
   const advisorIds = (advisors ?? []).map((a) => a.id as string);
 
-  // Modo de asignación (config en Cooitza app_settings).
-  const { data: modeRow } = await cooitza
+  // Modo de asignación + asesores elegibles (config en Cooitza app_settings).
+  const { data: settingsRows } = await cooitza
     .from("app_settings")
-    .select("value")
-    .eq("key", "lead_assignment_mode")
-    .maybeSingle();
-  const mode = String(modeRow?.value ?? "manual").replace(/"/g, "");
+    .select("key, value")
+    .in("key", ["lead_assignment_mode", "cooitza_advisor_ids"]);
+  const mode = String((settingsRows ?? []).find((r) => r.key === "lead_assignment_mode")?.value ?? "manual").replace(/"/g, "");
+  const eligibleRaw = (settingsRows ?? []).find((r) => r.key === "cooitza_advisor_ids")?.value;
+  const eligibleIds: string[] = Array.isArray(eligibleRaw) ? (eligibleRaw as string[]) : [];
+  // Pool: intersección con asesores CRM reales; si no hay config, todos.
+  const pool = eligibleIds.length > 0 ? advisorIds.filter((id) => eligibleIds.includes(id)) : advisorIds;
   let assignedTo: string | null = null;
-  if (mode === "random" && advisorIds.length > 0) {
-    assignedTo = advisorIds[Math.floor(Math.random() * advisorIds.length)];
+  if (mode === "random" && pool.length > 0) {
+    assignedTo = pool[Math.floor(Math.random() * pool.length)];
   }
 
   // Dueño del cliente: clients.owner_user_id es NOT NULL. Prioridad:
@@ -128,6 +131,21 @@ export async function pushLeadToVxm(
 
   if (leadErr || !vxmLead?.id) {
     return markFailed(leadErr?.message ?? "VXM no devolvió id de lead.");
+  }
+
+  // Notificar al asesor asignado (best-effort) que llegó un lead de Cooitza.
+  if (assignedTo) {
+    try {
+      await vxm.from("notifications").insert({
+        user_id: assignedTo,
+        title: "Nuevo lead de Cooitza",
+        message: `Se te asignó a ${lead.client_name} (lead de Cooitza). Revisalo en el CRM.`,
+        notification_type: "cooitza_lead",
+        link: `/crm/leads/${vxmLead.id}`,
+      });
+    } catch (e) {
+      console.warn("[leads] notificación a VXM falló:", (e as Error).message);
+    }
   }
 
   await cooitza

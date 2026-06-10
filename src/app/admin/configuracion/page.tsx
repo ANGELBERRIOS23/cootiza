@@ -3,6 +3,8 @@ import { Card } from "@/components/ui";
 import { ModeSetting, RatioSetting } from "@/components/admin/settings-forms";
 import { StageEditor } from "@/components/admin/stage-editor";
 import { SyncNowButton } from "@/components/admin/sync-now-button";
+import { CooitzaAdvisorsSetting } from "@/components/admin/cooitza-advisors-setting";
+import { listVxmAdvisors } from "@/lib/admin/actions";
 
 export const metadata = { title: "Configuración — Cooitza Admin" };
 
@@ -14,16 +16,19 @@ function val(settings: { key: string; value: unknown }[], key: string, fallback:
 
 export default async function AdminConfigPage() {
   const supabase = await createCooitzaServerClient();
-  const [{ data: settings }, { data: rule }, { data: stages }] = await Promise.all([
+  const [{ data: settings }, { data: rule }, { data: stages }, vxmAdvisors] = await Promise.all([
     supabase.from("app_settings").select("key, value"),
     supabase.from("points_rules").select("points_per_q_yield").eq("is_active", true).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("pipeline_stage_map").select("id, vxm_stage_code, display_name, is_won, is_terminal, display_order").order("display_order"),
+    listVxmAdvisors(),
   ]);
 
   const s = settings ?? [];
   const registrationMode = val(s, "registration_mode", "approval");
   const assignmentMode = val(s, "lead_assignment_mode", "manual");
   const ratio = Number(rule?.points_per_q_yield ?? 1);
+  const advisorIdsRow = s.find((r) => r.key === "cooitza_advisor_ids");
+  const selectedAdvisorIds: string[] = Array.isArray(advisorIdsRow?.value) ? (advisorIdsRow!.value as string[]) : [];
 
   return (
     <div className="space-y-4">
@@ -70,6 +75,18 @@ export default async function AdminConfigPage() {
           </p>
         </div>
         <SyncNowButton />
+      </Card>
+
+      <Card className="space-y-3 p-5">
+        <div>
+          <h2 className="text-sm font-bold text-slate-800">Asesores que reciben leads de Cooitza</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Lista en vivo de las cuentas de la plataforma con acceso al CRM. En modo aleatorio los
+            leads se reparten solo entre los marcados, y a cada uno le llega una notificación en VXM
+            cuando se le asigna un lead de Cooitza.
+          </p>
+        </div>
+        <CooitzaAdvisorsSetting advisors={vxmAdvisors} selected={selectedAdvisorIds} />
       </Card>
     </div>
   );
