@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth/session";
 import { SignOutButton } from "@/components/sign-out-button";
+import { PortalNav } from "@/components/portal/portal-nav";
 
 /**
  * Layout del portal del promotor. Verificación server-side en CADA request:
@@ -29,7 +30,9 @@ export default async function PortalLayout({ children }: { children: React.React
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-2xl px-4 py-6">{children}</main>
+      <PortalNav />
+      {/* pb-20 en móvil para no tapar contenido con la barra inferior fija */}
+      <main className="mx-auto max-w-2xl px-4 py-6 pb-24 sm:pb-6">{children}</main>
     </div>
   );
 }

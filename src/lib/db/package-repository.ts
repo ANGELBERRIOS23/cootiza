@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { getVxmCatalogClient } from "@/lib/db/vxm-catalog";
 import type { TravelPackage } from "@/lib/packages";
 import { buildSlug } from "@/lib/packages";
 
@@ -28,15 +28,19 @@ function mapSupabasePackage(p: Record<string, unknown>): TravelPackage {
 }
 
 export async function getPublishedPackages(): Promise<TravelPackage[]> {
+  const supabase = getVxmCatalogClient();
+  if (!supabase) return []; // VXM no configurado → catálogo vacío (degradación)
+
   const { data, error } = await supabase
     .from("packages")
     .select("*")
     .eq("is_public_cooitza", true)
     .order("has_offer", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   if (error) {
-    console.error("Supabase getPublishedPackages error:", error.message);
+    console.error("Catalog getPublishedPackages error:", error.message);
     return [];
   }
 

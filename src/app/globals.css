@@ -9,6 +9,19 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-body);
+
+  /* Marca Viajexmundo — teal/navy. Usado en el portal y el panel admin. */
+  --color-brand-50: #eefcfb;
+  --color-brand-100: #d3f5f2;
+  --color-brand-200: #a8ebe6;
+  --color-brand-300: #6fd9d2;
+  --color-brand-400: #38bdb6;
+  --color-brand-500: #1aa39c;
+  --color-brand-600: #0f8480;
+  --color-brand-700: #116a68;
+  --color-brand-800: #135453;
+  --color-brand-900: #134645;
+  --color-navy: #0f2a43;
 }
 
 body {
