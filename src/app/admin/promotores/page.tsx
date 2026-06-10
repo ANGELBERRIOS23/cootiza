@@ -27,13 +27,33 @@ const statusBadge: Record<string, { label: string; tone: "green" | "amber" | "re
   suspended: { label: "Suspendido", tone: "red" },
 };
 
+type TeamMember = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: "supervisor" | "admin" | "superadmin";
+  status: "active" | "pending_approval" | "suspended";
+};
+
+const roleLabel: Record<string, string> = {
+  superadmin: "Superadmin",
+  admin: "Administrador",
+  supervisor: "Supervisor",
+};
+
 export default async function AdminPromotoresPage() {
   const supabase = await createCooitzaServerClient();
-  const [{ data }, { data: agencies }] = await Promise.all([
+  const [{ data }, { data: agencies }, { data: team }] = await Promise.all([
     supabase.rpc("admin_promoter_stats"),
     supabase.from("agencies").select("id, name, region").eq("is_active", true).order("name"),
+    supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, role, status")
+      .in("role", ["admin", "superadmin", "supervisor"])
+      .order("role"),
   ]);
   const rows = ((data ?? []) as Stat[]).map((r) => ({ ...r, clients_count: Number(r.clients_count) }));
+  const teamRows = (team ?? []) as TeamMember[];
 
   const pending = rows.filter((p) => p.status === "pending_approval");
   const others = rows.filter((p) => p.status !== "pending_approval");
@@ -103,6 +123,31 @@ export default async function AdminPromotoresPage() {
           </ul>
         </Card>
       )}
+
+      {teamRows.length > 0 ? (
+        <Card className="overflow-hidden">
+          <div className="border-b border-slate-100 bg-slate-50 px-4 py-2 text-[11px] font-bold uppercase text-slate-400">
+            Equipo interno (admins y supervisores)
+          </div>
+          <ul className="divide-y divide-slate-100">
+            {teamRows.map((m) => {
+              const st = statusBadge[m.status] ?? { label: m.status, tone: "neutral" as const };
+              return (
+                <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <Avatar name={m.full_name || "U"} url={m.avatar_url} size="sm" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-slate-800">{m.full_name || "(sin nombre)"}</span>
+                      <span className="block truncate text-xs text-slate-400">{roleLabel[m.role] ?? m.role}</span>
+                    </span>
+                  </div>
+                  <Badge tone={st.tone}>{st.label}</Badge>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : null}
     </div>
   );
 }
