@@ -197,7 +197,7 @@ export function StatCard({
         </span>
       ) : null}
       <div className="min-w-0">
-        <p className="truncate text-[11px] font-bold uppercase tracking-wide leading-tight text-slate-400">{label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-wide leading-tight text-slate-400">{label}</p>
         <p className={cn("text-2xl font-black leading-tight tabular-nums", t.value)}>{value}</p>
         {sub ? <p className="truncate text-[11px] leading-tight text-slate-400">{sub}</p> : null}
       </div>
