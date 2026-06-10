@@ -26,12 +26,8 @@ export default async function LoginPage({
   }
 
   return (
-    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-[#0f2a43] via-brand-800 to-brand-700 px-4 py-10">
-      {/* atmósfera */}
-      <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-brand-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-amber-300/20 blur-3xl" />
-
-      <div className="relative w-full max-w-sm space-y-6">
+    <main className="flex min-h-dvh items-center justify-center bg-brand-800 px-4 py-10">
+      <div className="w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-12 w-auto rounded-xl bg-white/95 px-3 py-1.5 shadow-lg" />

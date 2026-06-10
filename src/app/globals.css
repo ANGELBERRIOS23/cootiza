@@ -13,22 +13,22 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-body);
 
-  /* Marca Viajexmundo — teal/navy. Usado en el portal y el panel admin. */
-  --color-brand-50: #eefcfb;
-  --color-brand-100: #d3f5f2;
-  --color-brand-200: #a8ebe6;
-  --color-brand-300: #6fd9d2;
-  --color-brand-400: #38bdb6;
-  --color-brand-500: #1aa39c;
-  --color-brand-600: #0f8480;
-  --color-brand-700: #116a68;
-  --color-brand-800: #135453;
-  --color-brand-900: #134645;
-  --color-navy: #0f2a43;
+  /* Marca Cooitza — navy corporativo #3D4F66 (color principal). Plano, sobrio. */
+  --color-brand-50: #f4f6f9;
+  --color-brand-100: #e6ebf1;
+  --color-brand-200: #cad3df;
+  --color-brand-300: #a3b1c4;
+  --color-brand-400: #6f82a0;
+  --color-brand-500: #4e6280;
+  --color-brand-600: #3d4f66;
+  --color-brand-700: #344357;
+  --color-brand-800: #2c3849;
+  --color-brand-900: #26303e;
+  --color-navy: #3d4f66;
 }
 
 body {
-  background: radial-gradient(circle at top left, #e0f2fe 0%, #f8fafc 40%, #f8fafc 100%);
+  background: #f5f6f8;
   color: var(--foreground);
   font-family: var(--font-body), sans-serif;
 }
@@ -49,7 +49,7 @@ body {
   --foreground: #e6edf6;
 }
 .dark body {
-  background: radial-gradient(circle at top left, #0f1f3a 0%, #0b1220 45%, #0b1220 100%);
+  background: #0b121d;
 }
 
 .dark .bg-white { background-color: #111c33 !important; }

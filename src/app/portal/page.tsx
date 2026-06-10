@@ -15,22 +15,16 @@ export default async function PortalHomePage() {
         <p className="text-sm text-slate-500">Bienvenido a tu portal de promotor.</p>
       </section>
 
-      {/* Hero de puntos — acento dorado, minimal */}
-      <Link
-        href="/portal/puntos"
-        className="relative block overflow-hidden rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-6 text-amber-950"
-      >
-        <div className="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-white/20 blur-2xl" />
-        <div className="relative">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-900/70">Tus puntos</p>
-          <p className="mt-1 flex items-end gap-2 text-5xl font-black leading-none tabular-nums">
-            {profile?.points_balance ?? 0}
-            <span className="mb-1 text-base font-bold text-amber-900/70">pts</span>
-          </p>
-          <p className="mt-2 text-sm font-medium text-amber-900/80">
-            Se acumulan cuando tus clientes cierran venta. Canjealos por premios.
-          </p>
-        </div>
+      {/* Hero de puntos — plano navy, número en dorado */}
+      <Link href="/portal/puntos" className="block rounded-2xl bg-brand-700 p-6 text-white">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">Tus puntos</p>
+        <p className="mt-1 flex items-end gap-2 text-5xl font-black leading-none tabular-nums text-amber-400">
+          {profile?.points_balance ?? 0}
+          <span className="mb-1 text-base font-bold text-white/60">pts</span>
+        </p>
+        <p className="mt-2 text-sm font-medium text-white/70">
+          Se acumulan cuando tus clientes cierran venta. Canjealos por premios.
+        </p>
       </Link>
 
       {/* Accesos rápidos */}

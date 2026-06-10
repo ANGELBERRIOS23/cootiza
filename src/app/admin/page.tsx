@@ -30,13 +30,11 @@ export default async function AdminHomePage() {
 
   return (
     <div className="space-y-6">
-      {/* Hero minimal de marca */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-700 to-[#0f2a43] px-6 py-7 text-white">
-        <div className="relative">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60">Cooitza · Viajexmundo</p>
-          <h1 className="mt-1.5 text-2xl font-black tracking-tight sm:text-3xl">Hola, {firstName}</h1>
-          <p className="mt-1 max-w-lg text-sm text-white/70">Panel de administración del portal de promotores.</p>
-        </div>
+      {/* Hero plano de marca (navy) */}
+      <div className="rounded-2xl bg-brand-700 px-6 py-7 text-white">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55">Cooitza · Viajexmundo</p>
+        <h1 className="mt-1.5 text-2xl font-black tracking-tight sm:text-3xl">Hola, {firstName}</h1>
+        <p className="mt-1 max-w-lg text-sm text-white/70">Panel de administración del portal de promotores.</p>
       </div>
 
       {!catalogConfigured ? (
