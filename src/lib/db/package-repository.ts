@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { getVxmCatalogClient } from "@/lib/db/vxm-catalog";
 import type { TravelPackage } from "@/lib/packages";
 import { buildSlug } from "@/lib/packages";
@@ -27,7 +28,7 @@ function mapSupabasePackage(p: Record<string, unknown>): TravelPackage {
   };
 }
 
-export async function getPublishedPackages(): Promise<TravelPackage[]> {
+async function fetchPublishedPackages(): Promise<TravelPackage[]> {
   const supabase = getVxmCatalogClient();
   if (!supabase) return []; // VXM no configurado → catálogo vacío (degradación)
 
@@ -46,6 +47,15 @@ export async function getPublishedPackages(): Promise<TravelPackage[]> {
 
   return (data ?? []).map(mapSupabasePackage);
 }
+
+/**
+ * Catálogo cacheado 5 min (rara vez cambia). Evita golpear VXM en cada request
+ * de dashboard/catálogo/modal de cliente. Se revalida solo o con la tag "catalog".
+ */
+export const getPublishedPackages = unstable_cache(fetchPublishedPackages, ["cooitza-published-packages"], {
+  revalidate: 300,
+  tags: ["catalog"],
+});
 
 export async function getPublishedPackageBySlug(slug: string): Promise<TravelPackage | null> {
   const packages = await getPublishedPackages();

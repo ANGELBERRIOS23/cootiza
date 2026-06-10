@@ -2,7 +2,9 @@ import Link from "next/link";
 import { getSessionProfile } from "@/lib/auth/session";
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { getStageMap, stageTone } from "@/lib/leads/stages";
+import { getPublishedPackages } from "@/lib/db/package-repository";
 import { Badge, Card, EmptyState, ButtonLink } from "@/components/ui";
+import { NewClientModal } from "@/components/portal/new-client-modal";
 
 export const metadata = { title: "Mis clientes — Portal Cooitza" };
 
@@ -21,7 +23,7 @@ export default async function MisLeadsPage() {
   const profile = await getSessionProfile();
   const supabase = await createCooitzaServerClient();
 
-  const [{ data: leads }, stageMap] = await Promise.all([
+  const [{ data: leads }, stageMap, packages] = await Promise.all([
     supabase
       .from("lead_mirror")
       .select("id, client_name, client_phone, package_title, current_stage, stage_updated_at, sync_status, created_at")
@@ -29,9 +31,17 @@ export default async function MisLeadsPage() {
       .order("created_at", { ascending: false })
       .limit(200),
     getStageMap(),
+    getPublishedPackages(),
   ]);
 
   const rows = (leads ?? []) as LeadRow[];
+  const pickerPackages = packages.map((p) => ({
+    id: p.id,
+    name: p.name,
+    destination: p.destination,
+    coverImage: p.coverImage,
+    basePrice: p.basePrice,
+  }));
 
   return (
     <div className="space-y-4">
@@ -40,7 +50,7 @@ export default async function MisLeadsPage() {
           <h1 className="text-xl font-bold text-slate-900">Mis clientes</h1>
           <p className="text-sm text-slate-500">Seguí en qué etapa va cada cliente que registraste.</p>
         </div>
-        <ButtonLink href="/portal/catalogo" size="sm">+ Nuevo</ButtonLink>
+        <NewClientModal packages={pickerPackages} />
       </header>
 
       {rows.length === 0 ? (

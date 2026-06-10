@@ -11,19 +11,18 @@ export default async function AdminHomePage() {
   const supabase = await createCooitzaServerClient();
   const profile = await getSessionProfile();
 
-  const [promoters, pendingPromoters, leads, redemptionsPending, topPromoters, packages] = await Promise.all([
+  const [promoters, pendingPromoters, leads, redemptionsPending, statsRes, packages] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "promoter"),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "pending_approval"),
     supabase.from("lead_mirror").select("id", { count: "exact", head: true }),
     supabase.from("redemptions").select("id", { count: "exact", head: true }).eq("status", "requested"),
-    supabase
-      .from("profiles")
-      .select("id, full_name, points_balance")
-      .eq("role", "promoter")
-      .order("points_balance", { ascending: false })
-      .limit(5),
+    supabase.rpc("admin_promoter_stats"),
     getPublishedPackages(),
   ]);
+
+  const topPromoters = ((statsRes.data ?? []) as { id: string; full_name: string; points_balance: number; clients_count: number }[])
+    .map((p) => ({ ...p, clients_count: Number(p.clients_count) }))
+    .slice(0, 5);
 
   const catalogConfigured = isCatalogConfigured();
   const firstName = (profile?.full_name || "").split(" ")[0] || "admin";
@@ -64,20 +63,28 @@ export default async function AdminHomePage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
-          <h2 className="mb-3 flex items-center gap-2 font-bold text-slate-800">🏅 Top promotores por puntos</h2>
-          {(topPromoters.data ?? []).length === 0 ? (
-            <p className="text-sm text-slate-500">Aún no hay promotores con puntos.</p>
+          <h2 className="mb-3 flex items-center gap-2 font-bold text-slate-800">🏅 Leaderboard de promotores</h2>
+          {topPromoters.length === 0 ? (
+            <p className="text-sm text-slate-500">Aún no hay promotores con actividad.</p>
           ) : (
             <ul className="space-y-1">
-              {(topPromoters.data ?? []).map((p, i) => (
-                <li key={p.id} className="flex items-center justify-between gap-3 rounded-xl px-2 py-1.5 hover:bg-slate-50">
-                  <span className="flex items-center gap-2.5 text-sm font-medium text-slate-700">
-                    <span className={`grid h-6 w-6 place-items-center rounded-full text-[11px] font-black ${i === 0 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"}`}>
-                      {i + 1}
+              {topPromoters.map((p, i) => (
+                <li key={p.id}>
+                  <Link
+                    href={`/admin/promotores/${p.id}`}
+                    className="flex items-center justify-between gap-3 rounded-xl px-2 py-1.5 hover:bg-slate-50"
+                  >
+                    <span className="flex min-w-0 items-center gap-2.5 text-sm font-medium text-slate-700">
+                      <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black ${["bg-amber-100 text-amber-700","bg-slate-200 text-slate-600","bg-orange-100 text-orange-700"][i] ?? "bg-slate-100 text-slate-500"}`}>
+                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+                      </span>
+                      <span className="truncate">{p.full_name}</span>
                     </span>
-                    {p.full_name}
-                  </span>
-                  <Badge tone="gold">{p.points_balance} pts</Badge>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      <Badge tone="brand">{p.clients_count} 📇</Badge>
+                      <Badge tone="gold">{p.points_balance} ⭐</Badge>
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>

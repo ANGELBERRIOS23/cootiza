@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 const items = [
   { href: "/admin", label: "Dashboard", icon: "📊", exact: true },
   { href: "/admin/promotores", label: "Promotores", icon: "👥" },
+  { href: "/admin/clientes", label: "Clientes", icon: "📇" },
   { href: "/admin/canjes", label: "Canjes", icon: "🎁" },
   { href: "/admin/premios", label: "Premios", icon: "🏆" },
   { href: "/admin/configuracion", label: "Configuración", icon: "⚙️" },
