@@ -10,10 +10,11 @@ type Row = { full_name: string; email: string; password: string; phone: string }
 const emptyRow = (): Row => ({ full_name: "", email: "", password: "", phone: "" });
 
 function randomPassword(): string {
+  // crypto.getRandomValues: Math.random() no es seguro para generar credenciales.
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  let p = "";
-  for (let i = 0; i < 10; i++) p += chars[Math.floor(Math.random() * chars.length)];
-  return p;
+  const buf = new Uint32Array(12);
+  crypto.getRandomValues(buf);
+  return Array.from(buf, (n) => chars[n % chars.length]).join("");
 }
 
 /** Mapea un encabezado del archivo a nuestro campo. */
