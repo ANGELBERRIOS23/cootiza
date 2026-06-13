@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionProfile, homePathForRole } from "@/lib/auth/session";
+import { appConfig } from "@/lib/config";
 import { LoginForm } from "./login-form";
 import { GoogleButton } from "./google-button";
 
@@ -29,8 +30,14 @@ export default async function LoginPage({
     <main className="flex min-h-dvh items-center justify-center bg-brand-800 px-4 py-10">
       <div className="w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-12 w-auto rounded-xl bg-white/95 px-3 py-1.5 shadow-lg" />
+          {/* Logos Cooitza × Viajexmundo, emparejados y simétricos (como en la landing) */}
+          <div className="flex items-center justify-center gap-3 rounded-2xl bg-white/95 px-5 py-3 shadow-lg sm:gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-9 w-auto sm:h-10" />
+            <span className="text-base font-black text-[#0B4EA2] sm:text-lg">×</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={appConfig.agencyLogoUrl} alt={appConfig.agencyName} className="h-8 w-auto sm:h-9" />
+          </div>
           <h1 className="mt-4 text-2xl font-black tracking-tight text-white">Portal de Promotores</h1>
           <p className="mt-1 text-sm text-white/70">Iniciá sesión para continuar</p>
         </div>
