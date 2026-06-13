@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Luggage, Contact, Star, Gift, type LucideIcon } from "lucide-react";
+import { Home, Luggage, Contact, UserPlus, Star, Gift, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const items: { href: string; label: string; Icon: LucideIcon; exact?: boolean }[] = [
   { href: "/portal", label: "Inicio", Icon: Home, exact: true },
   { href: "/portal/catalogo", label: "Catálogo", Icon: Luggage },
   { href: "/portal/mis-leads", label: "Clientes", Icon: Contact },
+  { href: "/portal/referencia", label: "Referir", Icon: UserPlus },
   { href: "/portal/puntos", label: "Puntos", Icon: Star },
   { href: "/portal/premios", label: "Premios", Icon: Gift },
 ];
@@ -48,7 +49,7 @@ export function PortalNav() {
 
       {/* Mobile: barra inferior fija */}
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200/70 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden">
-        <div className="mx-auto grid max-w-2xl grid-cols-5">
+        <div className="mx-auto grid max-w-2xl grid-cols-6">
           {items.map(({ href, label, Icon, exact }) => {
             const active = isActive(href, exact);
             return (

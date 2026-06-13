@@ -126,6 +126,84 @@ export async function createLead(input: unknown): Promise<CreateLeadResult> {
   return { ok: true, duplicateWarning: Boolean(dup) };
 }
 
+// --- Referencias de asesor ---------------------------------------------------
+
+/** Asesores de VXM (CRM) para que el promotor elija a quién atribuir una referencia. */
+export async function listReferralAdvisors(): Promise<{ id: string; full_name: string }[]> {
+  const profile = await getSessionProfile();
+  if (!profile || profile.status !== "active") return [];
+  if (!isVxmAdminConfigured()) return [];
+  const vxm = createVxmAdminClient();
+  const { data } = await vxm.from("profiles").select("id, full_name, role, crm_access");
+  return ((data ?? []) as { id: string; full_name: string | null; role: string; crm_access: boolean }[])
+    .filter((p) => p.crm_access || p.role === "admin" || p.role === "superadmin")
+    .map((p) => ({ id: p.id, full_name: p.full_name || "Asesor" }))
+    .sort((a, b) => a.full_name.localeCompare(b.full_name));
+}
+
+const referralSchema = z.object({
+  advisor_id: z.string().uuid("Elegí un asesor"),
+  client_name: z.string().trim().min(3, "Ingresá el nombre del cliente").max(120),
+  client_phone: z.string().trim().min(8, "Teléfono inválido").max(20).regex(/^[+]?[\d\s-]+$/, "Teléfono inválido"),
+  notes: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+/**
+ * El promotor registra una REFERENCIA: un cliente que un asesor de VXM mandó.
+ * Se crea como lead kind='referral' asignado a ese asesor; cuando el asesor la
+ * confirma en VXM, el cron de sync otorga puntos fijos al promotor.
+ */
+export async function createReferral(input: unknown): Promise<CreateLeadResult> {
+  const profile = await getSessionProfile();
+  if (!profile) return { ok: false, error: "No autenticado." };
+  if (profile.status !== "active") return { ok: false, error: "Tu cuenta no está activa." };
+
+  const parsed = referralSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+  const data = parsed.data;
+  const phone = normalizePhoneGT(data.client_phone);
+
+  const cooitza = createCooitzaAdminClient();
+
+  // Rate limit (misma ventana que los leads).
+  const { data: rateRow } = await cooitza.from("app_settings").select("value").eq("key", "lead_rate_limit_per_hour").maybeSingle();
+  const limit = Number(rateRow?.value ?? 30);
+  const sinceHour = new Date(Date.now() - 3600_000).toISOString();
+  const { count: recentCount } = await cooitza.from("lead_mirror").select("id", { count: "exact", head: true }).eq("promoter_id", profile.id).gte("created_at", sinceHour);
+  if ((recentCount ?? 0) >= limit) return { ok: false, error: `Alcanzaste el límite de ${limit} registros por hora. Intentá más tarde.` };
+
+  // Anti-duplicado: mismo promotor + teléfono en 14 días.
+  const since14 = new Date(Date.now() - 14 * 86400_000).toISOString();
+  const { data: dup } = await cooitza.from("lead_mirror").select("id").eq("promoter_id", profile.id).eq("client_phone", phone).gte("created_at", since14).limit(1).maybeSingle();
+
+  const { data: mirror, error: mirrorErr } = await cooitza
+    .from("lead_mirror")
+    .insert({
+      promoter_id: profile.id,
+      client_name: data.client_name,
+      client_phone: phone,
+      notes: data.notes || null,
+      kind: "referral",
+      referral_advisor_id: data.advisor_id,
+      sync_status: "pending",
+    })
+    .select("id")
+    .single();
+  if (mirrorErr || !mirror) return { ok: false, error: "No se pudo registrar la referencia. Intentá de nuevo." };
+
+  await pushLeadToVxm(mirror.id, {
+    client_name: data.client_name,
+    client_phone: phone,
+    client_email: null,
+    notes: data.notes || null,
+    promoter_code: profile.id,
+    kind: "referral",
+    referral_advisor_id: data.advisor_id,
+  }).catch((e) => { console.warn("[referral] push a VXM falló (queda pending):", (e as Error).message); });
+
+  return { ok: true, duplicateWarning: Boolean(dup) };
+}
+
 // --- Editar datos del cliente (promotor) -------------------------------------
 const editClientSchema = z.object({
   leadId: z.string().uuid(),

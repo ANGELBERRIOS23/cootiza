@@ -1,6 +1,6 @@
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { Card } from "@/components/ui";
-import { ModeSetting, RatioSetting } from "@/components/admin/settings-forms";
+import { ModeSetting, RatioSetting, ReferralPointsSetting } from "@/components/admin/settings-forms";
 import { StageEditor } from "@/components/admin/stage-editor";
 import { SyncNowButton } from "@/components/admin/sync-now-button";
 import { CooitzaAdvisorsSetting } from "@/components/admin/cooitza-advisors-setting";
@@ -31,6 +31,7 @@ export default async function AdminConfigPage() {
   const registrationMode = val(s, "registration_mode", "approval");
   const assignmentMode = val(s, "lead_assignment_mode", "round_robin");
   const ratio = Number(rule?.points_per_q_yield ?? 1);
+  const referralPoints = Number(s.find((r) => r.key === "cooitza_referral_points")?.value ?? 50);
   const advisorIdsRow = s.find((r) => r.key === "cooitza_advisor_ids");
   const selectedAdvisorIds: string[] = Array.isArray(advisorIdsRow?.value) ? (advisorIdsRow!.value as string[]) : [];
   const regionAdvisorsRow = s.find((r) => r.key === "cooitza_region_advisors");
@@ -69,6 +70,8 @@ export default async function AdminConfigPage() {
         />
         <hr className="border-slate-100" />
         <RatioSetting current={ratio} />
+        <hr className="border-slate-100" />
+        <ReferralPointsSetting current={referralPoints} />
       </Card>
 
       <Card className="p-5">

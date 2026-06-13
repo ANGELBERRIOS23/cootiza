@@ -6,6 +6,7 @@ export const metadata = { title: "Mis puntos — Portal Cooitza" };
 
 const reasonLabel: Record<string, string> = {
   sale_closed: "Venta cerrada",
+  referral_confirmed: "Referencia confirmada",
   redemption: "Canje de premio",
   admin_adjustment: "Ajuste",
   reversal: "Reverso",

@@ -43,6 +43,8 @@ export async function pushLeadToVxm(
     promoter_code: string; // = promoter_id (perfil en Cooitza)
     trip_start?: string | null;
     trip_end?: string | null;
+    kind?: string | null; // 'package' (default) | 'referral'
+    referral_advisor_id?: string | null; // asesor VXM al que se atribuye la referencia
   },
 ): Promise<void> {
   if (!isVxmAdminConfigured()) return; // degradación elegante
@@ -137,6 +139,12 @@ export async function pushLeadToVxm(
     }
   }
 
+  // Referencia de asesor: el promotor eligió a quién atribuirla → se asigna a ESE
+  // asesor (no round-robin); él la confirma en VXM y el promotor gana puntos.
+  if (lead.kind === "referral" && lead.referral_advisor_id) {
+    assignedTo = lead.referral_advisor_id;
+  }
+
   // Dueño del cliente: clients.owner_user_id es NOT NULL. Prioridad:
   //   asesor asignado → VXM_DEFAULT_OWNER_ID (env) → primer admin con CRM → primer asesor.
   const adminOwner = (advisors ?? []).find((a) => a.role === "admin" || a.role === "superadmin")?.id as
@@ -207,7 +215,7 @@ export async function pushLeadToVxm(
       .maybeSingle();
     if (!existingOpp?.id) {
       await vxm.from("crm_opportunities").insert({
-        title: lead.client_name,
+        title: lead.kind === "referral" ? `Referencia: ${lead.client_name}` : lead.client_name,
         client_id: clientId,
         lead_id: vxmLead.id,
         assigned_to: assignedTo ?? ownerId,
@@ -217,6 +225,7 @@ export async function pushLeadToVxm(
         promoter_phone: promoterPhone,
         departure_date: lead.trip_start ?? null,
         return_date: lead.trip_end ?? null,
+        is_referral: lead.kind === "referral",
       });
     }
   } catch (e) {
@@ -274,7 +283,7 @@ export async function syncPipeline(): Promise<SyncReport> {
   // ---- 1) Reintentar leads pendientes/fallidos --------------------------------
   const { data: unsettled } = await cooitza
     .from("lead_mirror")
-    .select("id, client_name, client_phone, client_email, notes, promoter_id, trip_start, trip_end")
+    .select("id, client_name, client_phone, client_email, notes, promoter_id, trip_start, trip_end, kind, referral_advisor_id")
     .in("sync_status", ["pending", "failed"])
     .limit(200);
 
@@ -288,6 +297,8 @@ export async function syncPipeline(): Promise<SyncReport> {
         promoter_code: lm.promoter_id,
         trip_start: lm.trip_start,
         trip_end: lm.trip_end,
+        kind: lm.kind,
+        referral_advisor_id: lm.referral_advisor_id,
       });
       report.retried++;
     } catch (e) {
@@ -313,6 +324,14 @@ export async function syncPipeline(): Promise<SyncReport> {
     .maybeSingle();
   const ratio = Number(rule?.points_per_q_yield ?? 1);
 
+  // Puntos fijos por referencia confirmada (configurable en app_settings).
+  const { data: refRow } = await cooitza
+    .from("app_settings")
+    .select("value")
+    .eq("key", "cooitza_referral_points")
+    .maybeSingle();
+  const referralPoints = Number(refRow?.value ?? 50);
+
   const { data: tracked } = await cooitza
     .from("lead_mirror")
     .select("id, promoter_id, vxm_lead_id, vxm_opportunity_id, current_stage, points_awarded, client_name")
@@ -325,7 +344,7 @@ export async function syncPipeline(): Promise<SyncReport> {
     try {
       const { data: opp } = await vxm
         .from("crm_opportunities")
-        .select("id, stage, linked_quote_id")
+        .select("id, stage, linked_quote_id, is_referral, referral_confirmed_at")
         .eq("lead_id", lm.vxm_lead_id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -399,6 +418,34 @@ export async function syncPipeline(): Promise<SyncReport> {
         }
         // Si pts === 0 (rendimiento aún no cargado), se deja sin marcar para
         // que una corrida futura lo otorgue cuando el asesor cargue el yield.
+      }
+
+      // Otorgar puntos cuando el asesor CONFIRMA una referencia (monto fijo).
+      if (!lm.points_awarded && opp.is_referral && opp.referral_confirmed_at && referralPoints > 0) {
+        const { error: refErr } = await cooitza.from("points_ledger").insert({
+          promoter_id: lm.promoter_id,
+          delta: referralPoints,
+          reason: "referral_confirmed",
+          lead_id: lm.id,
+          description: `Referencia confirmada de ${lm.client_name ?? "tu cliente"} — ${referralPoints} puntos`,
+          idempotency_key: `referral:${opp.id}`,
+        });
+        if (!refErr) {
+          await cooitza.from("lead_mirror").update({ points_awarded: true }).eq("id", lm.id);
+          await cooitza.from("notifications").insert({
+            user_id: lm.promoter_id,
+            title: `¡Ganaste ${referralPoints} puntos! ⭐`,
+            body: `Tu referencia de ${lm.client_name ?? "tu cliente"} fue confirmada.`,
+            kind: "points",
+            link: "/portal/puntos",
+          });
+          report.pointsAwarded++;
+          report.pointsTotal += referralPoints;
+        } else if (refErr.code === "23505") {
+          await cooitza.from("lead_mirror").update({ points_awarded: true }).eq("id", lm.id);
+        } else {
+          report.errors.push(`referral ${lm.id}: ${refErr.message}`);
+        }
       }
     } catch (e) {
       report.errors.push(`sync ${lm.id}: ${(e as Error).message}`);

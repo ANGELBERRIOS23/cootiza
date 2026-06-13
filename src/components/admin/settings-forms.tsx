@@ -71,6 +71,35 @@ export function ModeSetting({
   );
 }
 
+/** Puntos fijos que gana el promotor cuando un asesor confirma su referencia. */
+export function ReferralPointsSetting({ current }: { current: number }) {
+  const { saving, msg, run } = useSaver();
+  const [value, setValue] = useState(String(current));
+
+  return (
+    <div className="space-y-2">
+      <div>
+        <p className="text-sm font-semibold text-slate-800">Puntos por referencia confirmada</p>
+        <p className="text-xs text-slate-500">Cuántos puntos gana el promotor cuando un asesor confirma su referencia en la plataforma central.</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          min="0"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className={cn(inputClass, "w-28")}
+        />
+        <span className="text-sm text-slate-500">pts</span>
+        <Button size="sm" disabled={saving || Number(value) === current} onClick={() => run(() => updateSetting("cooitza_referral_points", Number(value)))}>
+          {saving ? "…" : "Guardar"}
+        </Button>
+        {msg ? <span className={cn("text-xs", msg.ok ? "text-emerald-600" : "text-red-600")}>{msg.text}</span> : null}
+      </div>
+    </div>
+  );
+}
+
 /** Ratio de puntos por Q1 de rendimiento. */
 export function RatioSetting({ current }: { current: number }) {
   const { saving, msg, run } = useSaver();
