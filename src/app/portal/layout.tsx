@@ -32,10 +32,10 @@ export default async function PortalLayout({ children }: { children: React.React
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2.5">
           <Link href="/portal" className="flex items-center gap-1.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-6 w-auto sm:h-7" />
+            <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-7 w-auto sm:h-8" />
             <span className="text-sm font-black text-[#0B4EA2]">×</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={appConfig.agencyLogoUrl} alt={appConfig.agencyName} className="h-5 w-auto sm:h-6" />
+            <img src={appConfig.agencyLogoUrl} alt={appConfig.agencyName} className="h-8 w-auto sm:h-9" />
           </Link>
           <div className="flex items-center gap-1">
             <NotificationBell userId={profile.id} />

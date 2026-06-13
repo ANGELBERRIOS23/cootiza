@@ -122,9 +122,9 @@ function PackageCard({ pkg }: { pkg: TravelPackage }) {
               <span className="text-lg font-black text-brand-600">{formatPrice(pkg.basePrice, pkg.currency)}</span>
             )}
           </div>
-          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-sm font-bold text-amber-700">
             ⭐ {pkg.estimatedPoints && pkg.estimatedPoints > 0
-              ? `≈ ${pkg.estimatedPoints.toLocaleString("es-GT")} pts para vos`
+              ? `≈ ${pkg.estimatedPoints.toLocaleString("es-GT")} puntos`
               : "Ganás puntos"}
           </span>
         </div>

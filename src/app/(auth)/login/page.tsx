@@ -36,7 +36,7 @@ export default async function LoginPage({
             <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-9 w-auto sm:h-10" />
             <span className="text-base font-black text-[#0B4EA2] sm:text-lg">×</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={appConfig.agencyLogoUrl} alt={appConfig.agencyName} className="h-8 w-auto sm:h-9" />
+            <img src={appConfig.agencyLogoUrl} alt={appConfig.agencyName} className="h-10 w-auto sm:h-12" />
           </div>
           <h1 className="mt-4 text-2xl font-black tracking-tight text-white">Portal de Promotores</h1>
           <p className="mt-1 text-sm text-white/70">Iniciá sesión para continuar</p>

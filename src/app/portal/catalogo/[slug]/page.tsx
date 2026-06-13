@@ -59,7 +59,7 @@ export default async function PackageDetailPage({
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-black text-amber-600">≈ {pkg.estimatedPoints.toLocaleString("es-GT")}</span>
-              <span className="text-sm font-semibold text-amber-700">puntos para vos</span>
+              <span className="text-sm font-semibold text-amber-700">puntos</span>
             </div>
             <p className="mt-1 text-[11px] leading-relaxed text-amber-700">
               Estimado. Los puntos se acreditan al <strong>concretarse la venta</strong> y pueden variar (subir o bajar)
