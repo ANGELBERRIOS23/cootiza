@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionProfile, homePathForRole } from "@/lib/auth/session";
+import { appConfig } from "@/lib/config";
 import { UserMenu } from "@/components/user-menu";
 
 /**
@@ -20,10 +21,13 @@ export default async function SupervisorLayout({ children }: { children: React.R
     <div className="min-h-dvh bg-slate-50">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-2.5">
-          <Link href="/supervisor" className="flex items-center gap-2">
+          <Link href="/supervisor" className="flex items-center gap-1.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-7 w-auto" />
-            <span className="rounded-md bg-brand-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+            <span className="text-sm font-black text-[#0B4EA2]">×</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={appConfig.agencyLogoUrl} alt={appConfig.agencyName} className="h-6 w-auto" />
+            <span className="ml-1 rounded-md bg-brand-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
               Supervisor
             </span>
           </Link>

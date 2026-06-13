@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth/session";
+import { appConfig } from "@/lib/config";
 import { PortalNav } from "@/components/portal/portal-nav";
 import { UserMenu } from "@/components/user-menu";
 import { NotificationBell } from "@/components/notification-bell";
@@ -29,9 +30,12 @@ export default async function PortalLayout({ children }: { children: React.React
       {profile.impersonating ? <ImpersonationBanner name={profile.full_name} /> : null}
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2.5">
-          <Link href="/portal" className="flex items-center gap-2">
+          <Link href="/portal" className="flex items-center gap-1.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-7 w-auto" />
+            <img src="/COOITZA-LOGO-WEB-1.png" alt="Cooitza" className="h-6 w-auto sm:h-7" />
+            <span className="text-sm font-black text-[#0B4EA2]">×</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={appConfig.agencyLogoUrl} alt={appConfig.agencyName} className="h-5 w-auto sm:h-6" />
           </Link>
           <div className="flex items-center gap-1">
             <NotificationBell userId={profile.id} />
