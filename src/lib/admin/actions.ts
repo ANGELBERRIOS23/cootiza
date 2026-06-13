@@ -453,3 +453,40 @@ export async function adjustPoints(promoterId: string, delta: number, reason: st
     revalidatePath("/admin/promotores");
   });
 }
+
+// --- Borrado de historial (admin) -------------------------------------------
+/**
+ * Elimina un canje del historial. CONSERVA el movimiento de puntos (el canje ya
+ * ocurrió): solo desvincula el ledger (para no borrarlo ni que la FK bloquee) y
+ * borra el registro del canje. El balance del promotor queda intacto.
+ */
+export async function deleteRedemption(redemptionId: string): Promise<AdminResult> {
+  return wrap(async () => {
+    const { admin } = await requireAdmin();
+    await admin.from("points_ledger").update({ redemption_id: null }).eq("redemption_id", redemptionId);
+    const { error } = await admin.from("redemptions").delete().eq("id", redemptionId);
+    if (error) throw error;
+    await audit("redemption:delete", "redemptions", redemptionId);
+    revalidatePath("/admin/canjes");
+  });
+}
+
+/** Elimina una entrada del registro de auditoría. */
+export async function deleteAuditEntry(auditId: string): Promise<AdminResult> {
+  return wrap(async () => {
+    const { admin } = await requireAdmin();
+    const { error } = await admin.from("audit_log").delete().eq("id", auditId);
+    if (error) throw error;
+    revalidatePath("/admin/auditoria");
+  });
+}
+
+/** Limpia TODO el registro de auditoría. */
+export async function clearAuditLog(): Promise<AdminResult> {
+  return wrap(async () => {
+    const { admin } = await requireAdmin();
+    const { error } = await admin.from("audit_log").delete().not("id", "is", null);
+    if (error) throw error;
+    revalidatePath("/admin/auditoria");
+  });
+}

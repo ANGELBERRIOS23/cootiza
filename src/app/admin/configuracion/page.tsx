@@ -74,6 +74,34 @@ export default async function AdminConfigPage() {
         <ReferralPointsSetting current={referralPoints} />
       </Card>
 
+      <Card className="space-y-3 p-5">
+        <div>
+          <h2 className="text-sm font-bold text-slate-800">Asesores que reciben leads de Cooitza</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Lista en vivo de las cuentas de la plataforma con acceso al CRM. En el reparto global los
+            leads se reparten solo entre los marcados, y a cada uno le llega una notificación en VXM
+            cuando se le asigna un lead de Cooitza.
+          </p>
+          <p className="mt-1 text-xs font-medium text-brand-700">
+            ¿Querés repartir por región (ej. Estefani = Central, Joel = Oriente)? Configuralo en
+            “Asignación por región”, aquí abajo 👇
+          </p>
+        </div>
+        <CooitzaAdvisorsSetting advisors={vxmAdvisors} selected={selectedAdvisorIds} />
+      </Card>
+
+      <Card className="space-y-3 border-brand-200 p-5">
+        <div>
+          <h2 className="text-sm font-bold text-slate-800">Asignación por región</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Asigná uno o más asesores a cada región. Si la agencia del promotor tiene región, su lead
+            rota (round-robin) solo entre los asesores de esa región. Tiene <strong>prioridad</strong>{" "}
+            sobre el reparto global de arriba; las regiones sin asesores usan el reparto global.
+          </p>
+        </div>
+        <CooitzaRegionAdvisorsSetting advisors={vxmAdvisors} regions={COOITZA_REGIONS} current={regionAdvisors} />
+      </Card>
+
       <Card className="p-5">
         <StageEditor stages={(stages ?? []) as { id: string; vxm_stage_code: string; display_name: string; is_won: boolean; is_terminal: boolean; display_order: number }[]} />
       </Card>
@@ -88,30 +116,6 @@ export default async function AdminConfigPage() {
           </p>
         </div>
         <SyncNowButton />
-      </Card>
-
-      <Card className="space-y-3 p-5">
-        <div>
-          <h2 className="text-sm font-bold text-slate-800">Asesores que reciben leads de Cooitza</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Lista en vivo de las cuentas de la plataforma con acceso al CRM. En modo aleatorio los
-            leads se reparten solo entre los marcados, y a cada uno le llega una notificación en VXM
-            cuando se le asigna un lead de Cooitza.
-          </p>
-        </div>
-        <CooitzaAdvisorsSetting advisors={vxmAdvisors} selected={selectedAdvisorIds} />
-      </Card>
-
-      <Card className="space-y-3 p-5">
-        <div>
-          <h2 className="text-sm font-bold text-slate-800">Asignación por región</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Si la agencia del promotor tiene región asignada, el lead rota (round-robin) solo entre los
-            asesores de esa región. Esto tiene <strong>prioridad</strong> sobre el reparto global de arriba.
-            Las regiones sin asesores usan el reparto global.
-          </p>
-        </div>
-        <CooitzaRegionAdvisorsSetting advisors={vxmAdvisors} regions={COOITZA_REGIONS} current={regionAdvisors} />
       </Card>
     </div>
   );

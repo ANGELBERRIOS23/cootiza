@@ -1,7 +1,7 @@
 import { createCooitzaServerClient } from "@/lib/db/cooitza-server";
 import { Badge, Card, EmptyState } from "@/components/ui";
 import { ActionButton } from "@/components/admin/action-button";
-import { approveRedemption, setRedemptionStatus } from "@/lib/admin/actions";
+import { approveRedemption, setRedemptionStatus, deleteRedemption } from "@/lib/admin/actions";
 
 export const metadata = { title: "Canjes — Cooitza Admin" };
 
@@ -78,7 +78,11 @@ export default async function AdminCanjesPage() {
       {history.length > 0 ? (
         <Section title="Historial">
           {history.map((r) => (
-            <Row key={r.id} info={promoterInfo(r)} reward={reward(r)} pts={r.points_cost_snapshot} date={r.created_at} badge={statusBadge[r.status]} />
+            <Row key={r.id} info={promoterInfo(r)} reward={reward(r)} pts={r.points_cost_snapshot} date={r.created_at} badge={statusBadge[r.status]}>
+              <ActionButton action={deleteRedemption.bind(null, r.id)} variant="ghost" confirm="¿Eliminar este canje del historial? No se puede deshacer. Los puntos ya canjeados NO se devuelven.">
+                Eliminar
+              </ActionButton>
+            </Row>
           ))}
         </Section>
       ) : null}
