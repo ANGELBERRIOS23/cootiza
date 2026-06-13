@@ -17,6 +17,8 @@ export type TravelPackage = {
   includes: string[];
   excludes: string[];
   itinerary: Array<{ day: number; title: string; description: string }>;
+  /** Puntos estimados para el promotor al concretar la venta (admin lo fija en VXM). null = no mostrar número. */
+  estimatedPoints: number | null;
 };
 
 export function formatPrice(price: number, currency: "GTQ") {

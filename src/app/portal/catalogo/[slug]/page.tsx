@@ -117,6 +117,27 @@ export default async function PackageDetailPage({
               <p className="mb-3 text-xs text-slate-500">
                 Tomá los datos y un asesor lo contacta. Vos seguís la venta desde “Mis clientes”.
               </p>
+
+              {pkg.estimatedPoints && pkg.estimatedPoints > 0 ? (
+                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-lg font-black text-amber-600">
+                      ≈ {pkg.estimatedPoints.toLocaleString("es-GT")}
+                    </span>
+                    <span className="text-sm font-semibold text-amber-700">puntos</span>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-amber-700">
+                    Estimado. Los puntos se acreditan al <strong>concretarse la venta</strong> y pueden variar (subir o
+                    bajar) hasta el cierre; ahí quedan congelados a su valor final.
+                  </p>
+                </div>
+              ) : (
+                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] leading-relaxed text-amber-700">
+                  Ganás <strong>puntos</strong> cuando esta venta se concrete. El monto se confirma y queda congelado al
+                  cierre.
+                </div>
+              )}
+
               <LeadForm packageVxmId={pkg.id} packageTitle={pkg.name} />
             </Card>
           </div>

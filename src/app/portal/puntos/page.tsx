@@ -15,40 +15,36 @@ export default async function PuntosPage() {
   const profile = await getSessionProfile();
   const supabase = await createCooitzaServerClient();
 
-  const [{ data: ledger }, { data: rule }] = await Promise.all([
-    supabase
-      .from("points_ledger")
-      .select("id, delta, reason, description, created_at")
-      .eq("promoter_id", profile!.id)
-      .order("created_at", { ascending: false })
-      .limit(100),
-    supabase
-      .from("points_rules")
-      .select("points_per_q_yield")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  const { data: ledger } = await supabase
+    .from("points_ledger")
+    .select("id, delta, reason, description, created_at")
+    .eq("promoter_id", profile!.id)
+    .order("created_at", { ascending: false })
+    .limit(100);
 
-  const ratio = Number(rule?.points_per_q_yield ?? 1);
   const rows = ledger ?? [];
+  // "Ganados" = suma de movimientos positivos (no revela la fórmula de rendimiento).
+  const earned = rows.reduce((acc, m) => (m.delta > 0 ? acc + m.delta : acc), 0);
 
   return (
     <div className="space-y-4">
       <header>
         <h1 className="text-xl font-bold text-slate-900">Mis puntos</h1>
-        <p className="text-sm text-slate-500">Acumulás puntos según el rendimiento de cada venta cerrada.</p>
+        <p className="text-sm text-slate-500">Ganás puntos cuando un cliente que registraste concreta su compra.</p>
       </header>
 
       <div className="grid grid-cols-2 gap-3">
         <StatCard label="Balance" value={profile?.points_balance ?? 0} tone="green" sub="puntos disponibles" />
-        <StatCard
-          label="Cómo se gana"
-          value={ratio === 1 ? "Q1 = 1 pt" : `Q1 = ${ratio} pts`}
-          tone="brand"
-          sub="por rendimiento de la venta"
-        />
+        <StatCard label="Ganados" value={earned} tone="brand" sub="acumulado histórico" />
+      </div>
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
+        <p className="font-semibold">¿Cómo se acreditan tus puntos?</p>
+        <p className="mt-1">
+          Los puntos que ves en un paquete son un <strong>estimado</strong>. Se acreditan hasta que la venta se{" "}
+          <strong>concreta</strong>, y hasta ese momento pueden variar (subir o bajar) según el cierre final. Cuando la
+          venta se concreta, los puntos quedan <strong>congelados</strong> a su valor final.
+        </p>
       </div>
 
       <Card className="p-5">

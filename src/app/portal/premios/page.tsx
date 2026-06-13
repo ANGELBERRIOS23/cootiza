@@ -35,6 +35,7 @@ export default async function PremiosPage() {
   ]);
 
   const list = rewards ?? [];
+  const hasPhone = Boolean(profile?.phone && profile.phone.trim());
 
   return (
     <div className="space-y-4">
@@ -45,6 +46,19 @@ export default async function PremiosPage() {
         </div>
         <StatCard label="Tu balance" value={balance} tone="green" />
       </header>
+
+      {!hasPhone ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
+          <p className="font-semibold">Agregá tu teléfono para poder canjear</p>
+          <p className="mt-1">
+            Es el número donde la agencia te contacta para coordinar la entrega de tu premio.{" "}
+            <a href="/portal/perfil" className="font-semibold underline">
+              Completá tu perfil
+            </a>
+            .
+          </p>
+        </div>
+      ) : null}
 
       {list.length === 0 ? (
         <EmptyState emoji="🎁" title="Aún no hay premios" description="Pronto vas a poder canjear tus puntos por premios." />
@@ -75,7 +89,13 @@ export default async function PremiosPage() {
                   <div className="mt-auto flex items-center justify-between pt-2">
                     <span className="text-lg font-black text-brand-600">{r.points_cost} pts</span>
                   </div>
-                  <RedeemButton rewardId={r.id} disabled={disabled} disabledReason={reason} />
+                  <RedeemButton
+                    rewardId={r.id}
+                    rewardTitle={r.title}
+                    disabled={disabled}
+                    disabledReason={reason}
+                    needsPhone={!hasPhone}
+                  />
                 </div>
               </Card>
             );

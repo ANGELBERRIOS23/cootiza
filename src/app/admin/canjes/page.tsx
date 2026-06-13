@@ -127,6 +127,18 @@ function Row({
             {info.phone ? <span>📞 {info.phone}</span> : null}
             {info.balance != null ? <span>⭐ Saldo: {info.balance} pts</span> : null}
           </p>
+          {info.phone ? (
+            <a
+              href={`https://wa.me/${info.phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
+                `Hola ${info.name}, te escribimos de Viajexmundo por tu canje de "${reward}" en Cooitza. Coordinemos la entrega.`,
+              )}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-[#25D366] px-2 py-1 text-[11px] font-bold text-white hover:opacity-90"
+            >
+              💬 Escribir al promotor
+            </a>
+          ) : null}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">

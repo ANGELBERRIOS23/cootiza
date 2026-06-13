@@ -4,9 +4,13 @@ import { ModeSetting, RatioSetting } from "@/components/admin/settings-forms";
 import { StageEditor } from "@/components/admin/stage-editor";
 import { SyncNowButton } from "@/components/admin/sync-now-button";
 import { CooitzaAdvisorsSetting } from "@/components/admin/cooitza-advisors-setting";
+import { CooitzaRegionAdvisorsSetting } from "@/components/admin/cooitza-region-advisors-setting";
 import { listVxmAdvisors } from "@/lib/admin/actions";
 
 export const metadata = { title: "Configuración — Cooitza Admin" };
+
+// Etiquetas del enum `region` (agencies.region) — orden de presentación.
+const COOITZA_REGIONS = ["Central", "Occidente", "Centro Oriente", "Noroccidente", "Oriente", "Petén"];
 
 function val(settings: { key: string; value: unknown }[], key: string, fallback: string) {
   const row = settings.find((s) => s.key === key);
@@ -25,10 +29,15 @@ export default async function AdminConfigPage() {
 
   const s = settings ?? [];
   const registrationMode = val(s, "registration_mode", "approval");
-  const assignmentMode = val(s, "lead_assignment_mode", "manual");
+  const assignmentMode = val(s, "lead_assignment_mode", "round_robin");
   const ratio = Number(rule?.points_per_q_yield ?? 1);
   const advisorIdsRow = s.find((r) => r.key === "cooitza_advisor_ids");
   const selectedAdvisorIds: string[] = Array.isArray(advisorIdsRow?.value) ? (advisorIdsRow!.value as string[]) : [];
+  const regionAdvisorsRow = s.find((r) => r.key === "cooitza_region_advisors");
+  const regionAdvisors: Record<string, string[]> =
+    regionAdvisorsRow?.value && typeof regionAdvisorsRow.value === "object" && !Array.isArray(regionAdvisorsRow.value)
+      ? (regionAdvisorsRow.value as Record<string, string[]>)
+      : {};
 
   return (
     <div className="space-y-4">
@@ -38,11 +47,12 @@ export default async function AdminConfigPage() {
         <ModeSetting
           settingKey="lead_assignment_mode"
           current={assignmentMode}
-          label="Asignación de leads"
-          help="Cómo se asignan a un asesor los clientes que registran los promotores."
+          label="Asignación de leads (reparto global)"
+          help="Cómo se reparten los leads cuando NO aplica una regla de región. Round-robin rota equitativamente entre los asesores marcados abajo."
           options={[
+            { value: "round_robin", label: "Round-robin (rota equitativo)" },
+            { value: "random", label: "Aleatoria" },
             { value: "manual", label: "Manual (un admin reparte)" },
-            { value: "random", label: "Aleatoria (round-robin)" },
           ]}
         />
         <hr className="border-slate-100" />
@@ -87,6 +97,18 @@ export default async function AdminConfigPage() {
           </p>
         </div>
         <CooitzaAdvisorsSetting advisors={vxmAdvisors} selected={selectedAdvisorIds} />
+      </Card>
+
+      <Card className="space-y-3 p-5">
+        <div>
+          <h2 className="text-sm font-bold text-slate-800">Asignación por región</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Si la agencia del promotor tiene región asignada, el lead rota (round-robin) solo entre los
+            asesores de esa región. Esto tiene <strong>prioridad</strong> sobre el reparto global de arriba.
+            Las regiones sin asesores usan el reparto global.
+          </p>
+        </div>
+        <CooitzaRegionAdvisorsSetting advisors={vxmAdvisors} regions={COOITZA_REGIONS} current={regionAdvisors} />
       </Card>
     </div>
   );

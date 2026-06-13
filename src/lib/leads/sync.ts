@@ -40,7 +40,9 @@ export async function pushLeadToVxm(
     client_phone: string;
     client_email: string | null;
     notes: string | null;
-    promoter_code: string;
+    promoter_code: string; // = promoter_id (perfil en Cooitza)
+    trip_start?: string | null;
+    trip_end?: string | null;
   },
 ): Promise<void> {
   if (!isVxmAdminConfigured()) return; // degradación elegante
@@ -63,19 +65,76 @@ export async function pushLeadToVxm(
     .limit(200);
   const advisorIds = (advisors ?? []).map((a) => a.id as string);
 
-  // Modo de asignación + asesores elegibles (config en Cooitza app_settings).
+  // Promotor + su región (para asignación por región y para mostrar quién refirió).
+  let promoterName: string | null = null;
+  let promoterPhone: string | null = null;
+  let region: string | null = null;
+  {
+    const { data: prof } = await cooitza
+      .from("profiles")
+      .select("full_name, phone, agency_id")
+      .eq("id", lead.promoter_code)
+      .maybeSingle();
+    promoterName = (prof?.full_name as string) ?? null;
+    promoterPhone = (prof?.phone as string) ?? null;
+    if (prof?.agency_id) {
+      const { data: ag } = await cooitza
+        .from("agencies")
+        .select("region")
+        .eq("id", prof.agency_id)
+        .maybeSingle();
+      region = (ag?.region as string) ?? null;
+    }
+  }
+
+  // Config de asignación (Cooitza app_settings).
   const { data: settingsRows } = await cooitza
     .from("app_settings")
     .select("key, value")
-    .in("key", ["lead_assignment_mode", "cooitza_advisor_ids"]);
-  const mode = String((settingsRows ?? []).find((r) => r.key === "lead_assignment_mode")?.value ?? "manual").replace(/"/g, "");
-  const eligibleRaw = (settingsRows ?? []).find((r) => r.key === "cooitza_advisor_ids")?.value;
+    .in("key", ["lead_assignment_mode", "cooitza_advisor_ids", "cooitza_region_advisors", "cooitza_rr_cursor"]);
+  const getVal = (k: string) => (settingsRows ?? []).find((r) => r.key === k)?.value;
+  const mode = String(getVal("lead_assignment_mode") ?? "round_robin").replace(/"/g, "");
+  const eligibleRaw = getVal("cooitza_advisor_ids");
   const eligibleIds: string[] = Array.isArray(eligibleRaw) ? (eligibleRaw as string[]) : [];
-  // Pool: intersección con asesores CRM reales; si no hay config, todos.
-  const pool = eligibleIds.length > 0 ? advisorIds.filter((id) => eligibleIds.includes(id)) : advisorIds;
+  const regionMapRaw = getVal("cooitza_region_advisors");
+  const regionMap: Record<string, string[]> =
+    regionMapRaw && typeof regionMapRaw === "object" ? (regionMapRaw as Record<string, string[]>) : {};
+  const cursorRaw = getVal("cooitza_rr_cursor");
+  const cursor: Record<string, number> =
+    cursorRaw && typeof cursorRaw === "object" ? (cursorRaw as Record<string, number>) : {};
+
   let assignedTo: string | null = null;
-  if (mode === "random" && pool.length > 0) {
-    assignedTo = pool[Math.floor(Math.random() * pool.length)];
+  // 1) Round-robin por REGIÓN: si la región del promotor tiene asesores configurados,
+  //    reparte rotando (no aleatorio) entre ellos. Cursor persistido por región.
+  const regionPool = (region && Array.isArray(regionMap[region]) ? regionMap[region] : []).filter((id) =>
+    advisorIds.includes(id),
+  );
+  if (region && regionPool.length > 0) {
+    const next = (Number(cursor[region] ?? -1) + 1) % regionPool.length;
+    assignedTo = regionPool[next];
+    await cooitza
+      .from("app_settings")
+      .update({ value: { ...cursor, [region]: next }, updated_at: new Date().toISOString() })
+      .eq("key", "cooitza_rr_cursor");
+  } else {
+    // 2) Fallback global: pool = asesores elegibles (si se marcaron en config) o
+    //    TODOS los de CRM. 'manual' = no asignar (opt-out explícito); 'random' =
+    //    aleatorio; cualquier otro (incl. 'round_robin' y el default) = round-robin
+    //    rotando un cursor global. Con un solo asesor en el pool, siempre cae en él.
+    const pool = eligibleIds.length > 0 ? advisorIds.filter((id) => eligibleIds.includes(id)) : advisorIds;
+    if (pool.length > 0 && mode !== "manual") {
+      if (mode === "random") {
+        assignedTo = pool[Math.floor(Math.random() * pool.length)];
+      } else {
+        const GLOBAL = "__global__";
+        const next = (Number(cursor[GLOBAL] ?? -1) + 1) % pool.length;
+        assignedTo = pool[next];
+        await cooitza
+          .from("app_settings")
+          .update({ value: { ...cursor, [GLOBAL]: next }, updated_at: new Date().toISOString() })
+          .eq("key", "cooitza_rr_cursor");
+      }
+    }
   }
 
   // Dueño del cliente: clients.owner_user_id es NOT NULL. Prioridad:
@@ -117,6 +176,8 @@ export async function pushLeadToVxm(
     clientId = created.id;
   }
 
+  const travelDates =
+    lead.trip_start || lead.trip_end ? { from: lead.trip_start ?? null, to: lead.trip_end ?? null } : null;
   const { data: vxmLead, error: leadErr } = await vxm
     .from("crm_leads")
     .insert({
@@ -125,12 +186,41 @@ export async function pushLeadToVxm(
       source: "COOITZA",
       assigned_to: assignedTo,
       notes: lead.notes,
+      travel_dates: travelDates,
     })
     .select("id")
     .single();
 
   if (leadErr || !vxmLead?.id) {
     return markFailed(leadErr?.message ?? "VXM no devolvió id de lead.");
+  }
+
+  // Crear la OPORTUNIDAD directo (etapa LEAD_NUEVO): los clientes de Cooitza entran
+  // ya como tarjeta en el Kanban, con fechas de viaje y datos del promotor. Idempotente
+  // (no duplica por lead). assigned_to es NOT NULL → asignado del round-robin o el ownerId.
+  try {
+    const { data: existingOpp } = await vxm
+      .from("crm_opportunities")
+      .select("id")
+      .eq("lead_id", vxmLead.id)
+      .limit(1)
+      .maybeSingle();
+    if (!existingOpp?.id) {
+      await vxm.from("crm_opportunities").insert({
+        title: lead.client_name,
+        client_id: clientId,
+        lead_id: vxmLead.id,
+        assigned_to: assignedTo ?? ownerId,
+        stage: "LEAD_NUEVO",
+        source: "COOITZA",
+        promoter_name: promoterName,
+        promoter_phone: promoterPhone,
+        departure_date: lead.trip_start ?? null,
+        return_date: lead.trip_end ?? null,
+      });
+    }
+  } catch (e) {
+    console.warn("[leads] crear oportunidad Cooitza falló (lead sí se creó):", (e as Error).message);
   }
 
   // Notificar al asesor asignado (best-effort) que llegó un lead de Cooitza.
@@ -184,7 +274,7 @@ export async function syncPipeline(): Promise<SyncReport> {
   // ---- 1) Reintentar leads pendientes/fallidos --------------------------------
   const { data: unsettled } = await cooitza
     .from("lead_mirror")
-    .select("id, client_name, client_phone, client_email, notes, promoter_id")
+    .select("id, client_name, client_phone, client_email, notes, promoter_id, trip_start, trip_end")
     .in("sync_status", ["pending", "failed"])
     .limit(200);
 
@@ -196,6 +286,8 @@ export async function syncPipeline(): Promise<SyncReport> {
         client_email: lm.client_email,
         notes: lm.notes,
         promoter_code: lm.promoter_id,
+        trip_start: lm.trip_start,
+        trip_end: lm.trip_end,
       });
       report.retried++;
     } catch (e) {
@@ -284,7 +376,7 @@ export async function syncPipeline(): Promise<SyncReport> {
             delta: pts,
             reason: "sale_closed",
             lead_id: lm.id,
-            description: `Venta cerrada — rendimiento Q${yieldQ.toFixed(2)} × ${ratio} pts`,
+            description: `Venta cerrada de ${lm.client_name ?? "tu cliente"} — ${pts} puntos`,
             idempotency_key: `sale:${opp.id}`,
           });
           if (!ledgerErr) {

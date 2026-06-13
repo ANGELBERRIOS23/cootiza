@@ -19,6 +19,8 @@ const leadSchema = z.object({
   client_email: z.string().trim().email("Correo inválido").optional().or(z.literal("")),
   package_vxm_id: z.string().optional(),
   package_title: z.string().optional(),
+  trip_start: z.string().trim().min(1, "Ingresá la fecha de inicio del viaje"),
+  trip_end: z.string().trim().min(1, "Ingresá la fecha de fin del viaje"),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
@@ -95,6 +97,8 @@ export async function createLead(input: unknown): Promise<CreateLeadResult> {
       client_email: data.client_email || null,
       package_vxm_id: data.package_vxm_id || null,
       package_title: data.package_title || null,
+      trip_start: data.trip_start || null,
+      trip_end: data.trip_end || null,
       notes: data.notes || null,
       sync_status: "pending",
     })
@@ -113,6 +117,8 @@ export async function createLead(input: unknown): Promise<CreateLeadResult> {
     client_email: data.client_email || null,
     notes: data.notes || null,
     promoter_code: profile.id,
+    trip_start: data.trip_start || null,
+    trip_end: data.trip_end || null,
   }).catch((e) => {
     console.warn("[leads] push a VXM falló (queda pending):", (e as Error).message);
   });

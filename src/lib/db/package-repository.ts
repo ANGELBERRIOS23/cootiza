@@ -25,6 +25,7 @@ function mapSupabasePackage(p: Record<string, unknown>): TravelPackage {
     itinerary: Array.isArray(p.itinerary)
       ? (p.itinerary as Array<{ day: number; title: string; description: string }>)
       : [],
+    estimatedPoints: p.cooitza_estimated_points != null ? Number(p.cooitza_estimated_points) : null,
   };
 }
 

@@ -18,6 +18,7 @@ export function LeadForm({
   const [state, setState] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
+  const [tripStart, setTripStart] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,6 +30,8 @@ export function LeadForm({
       client_name: String(form.get("client_name") ?? ""),
       client_phone: String(form.get("client_phone") ?? ""),
       client_email: String(form.get("client_email") ?? ""),
+      trip_start: String(form.get("trip_start") ?? ""),
+      trip_end: String(form.get("trip_end") ?? ""),
       notes: String(form.get("notes") ?? ""),
       package_vxm_id: packageVxmId,
       package_title: packageTitle,
@@ -85,6 +88,21 @@ export function LeadForm({
       <Field label="Correo (opcional)">
         <input name="client_email" type="email" placeholder="cliente@correo.com" className={inputClass} />
       </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Inicio del viaje">
+          <input
+            name="trip_start"
+            type="date"
+            required
+            value={tripStart}
+            onChange={(e) => setTripStart(e.target.value)}
+            className={inputClass}
+          />
+        </Field>
+        <Field label="Fin del viaje">
+          <input name="trip_end" type="date" required min={tripStart || undefined} className={inputClass} />
+        </Field>
+      </div>
       <Field label="Nota (opcional)" hint="Algo que le sirva al asesor.">
         <textarea name="notes" maxLength={500} rows={2} className={inputClass} />
       </Field>
