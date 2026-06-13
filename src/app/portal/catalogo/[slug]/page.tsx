@@ -4,7 +4,7 @@ import { getPublishedPackageBySlug } from "@/lib/db/package-repository";
 import { formatPrice } from "@/lib/packages";
 import { Badge, Card } from "@/components/ui";
 import { SafeImage } from "@/components/safe-image";
-import { LeadForm } from "@/components/portal/lead-form";
+import { LeadFormModal } from "@/components/portal/lead-form-modal";
 
 export const revalidate = 60;
 
@@ -53,96 +53,82 @@ export default async function PackageDetailPage({
         </div>
       </Card>
 
-      {/* Layout: detalle + form. En desktop, form sticky a la derecha. */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-5 order-2 lg:order-1">
-          {pkg.description ? (
-            <Card className="p-4 sm:p-5">
-              <h2 className="mb-2 font-bold text-slate-800">Descripción</h2>
-              <p className="whitespace-pre-wrap text-sm text-slate-600">{pkg.description}</p>
-            </Card>
-          ) : null}
-
-          {pkg.includes.length > 0 ? (
-            <Card className="p-4 sm:p-5">
-              <h2 className="mb-2 font-bold text-slate-800">Incluye</h2>
-              <ul className="space-y-1 text-sm text-slate-600">
-                {pkg.includes.map((it, i) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="text-emerald-500">✓</span> {it}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ) : null}
-
-          {pkg.excludes.length > 0 ? (
-            <Card className="p-4 sm:p-5">
-              <h2 className="mb-2 font-bold text-slate-800">No incluye</h2>
-              <ul className="space-y-1 text-sm text-slate-600">
-                {pkg.excludes.map((it, i) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="text-slate-300">✕</span> {it}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ) : null}
-
-          {pkg.itinerary.length > 0 ? (
-            <Card className="p-4 sm:p-5">
-              <h2 className="mb-3 font-bold text-slate-800">Itinerario</h2>
-              <ol className="space-y-3">
-                {pkg.itinerary.map((d) => (
-                  <li key={d.day} className="flex gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
-                      {d.day}
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">{d.title}</p>
-                      <p className="text-sm text-slate-500">{d.description}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </Card>
-          ) : null}
-        </div>
-
-        {/* Form de lead */}
-        <div className="order-1 lg:order-2">
-          <div className="lg:sticky lg:top-[72px]">
-            <Card className="p-4 sm:p-5">
-              <h2 className="mb-1 font-bold text-slate-800">Registrar cliente interesado</h2>
-              <p className="mb-3 text-xs text-slate-500">
-                Tomá los datos y un asesor lo contacta. Vos seguís la venta desde “Mis clientes”.
-              </p>
-
-              {pkg.estimatedPoints && pkg.estimatedPoints > 0 ? (
-                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-lg font-black text-amber-600">
-                      ≈ {pkg.estimatedPoints.toLocaleString("es-GT")}
-                    </span>
-                    <span className="text-sm font-semibold text-amber-700">puntos</span>
-                  </div>
-                  <p className="mt-1 text-[11px] leading-relaxed text-amber-700">
-                    Estimado. Los puntos se acreditan al <strong>concretarse la venta</strong> y pueden variar (subir o
-                    bajar) hasta el cierre; ahí quedan congelados a su valor final.
-                  </p>
-                </div>
-              ) : (
-                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] leading-relaxed text-amber-700">
-                  Ganás <strong>puntos</strong> cuando esta venta se concrete. El monto se confirma y queda congelado al
-                  cierre.
-                </div>
-              )}
-
-              <LeadForm packageVxmId={pkg.id} packageTitle={pkg.name} />
-            </Card>
+      {/* Puntos para el promotor + CTA (modal). El portal siempre es con sesión iniciada. */}
+      <Card className="space-y-3 p-4 sm:p-5">
+        {pkg.estimatedPoints && pkg.estimatedPoints > 0 ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-black text-amber-600">≈ {pkg.estimatedPoints.toLocaleString("es-GT")}</span>
+              <span className="text-sm font-semibold text-amber-700">puntos para vos</span>
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-amber-700">
+              Estimado. Los puntos se acreditan al <strong>concretarse la venta</strong> y pueden variar (subir o bajar)
+              hasta el cierre; ahí quedan congelados a su valor final.
+            </p>
           </div>
+        ) : (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[11px] leading-relaxed text-amber-700">
+            Ganás <strong>puntos</strong> cuando esta venta se concrete. El monto se confirma y queda congelado al cierre
+            (puede variar hasta entonces).
+          </div>
+        )}
+        <p className="text-xs text-slate-500">
+          Tomá los datos del cliente y un asesor lo contacta. Vos seguís la venta desde “Mis clientes”.
+        </p>
+        <LeadFormModal packageVxmId={pkg.id} packageTitle={pkg.name} />
+      </Card>
+
+      {/* Detalle a ancho completo */}
+      {pkg.description ? (
+        <Card className="p-4 sm:p-6">
+          <h2 className="mb-2 text-lg font-bold text-slate-800">Descripción</h2>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{pkg.description}</p>
+        </Card>
+      ) : null}
+
+      {pkg.includes.length > 0 || pkg.excludes.length > 0 ? (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {pkg.includes.length > 0 ? (
+            <Card className="p-4 sm:p-6">
+              <h2 className="mb-3 text-lg font-bold text-slate-800">Incluye</h2>
+              <ul className="space-y-2 text-sm text-slate-600">
+                {pkg.includes.map((it, i) => (
+                  <li key={i} className="flex gap-2"><span className="mt-0.5 text-emerald-500">✓</span> <span>{it}</span></li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
+          {pkg.excludes.length > 0 ? (
+            <Card className="p-4 sm:p-6">
+              <h2 className="mb-3 text-lg font-bold text-slate-800">No incluye</h2>
+              <ul className="space-y-2 text-sm text-slate-600">
+                {pkg.excludes.map((it, i) => (
+                  <li key={i} className="flex gap-2"><span className="mt-0.5 text-slate-300">✕</span> <span>{it}</span></li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
         </div>
-      </div>
+      ) : null}
+
+      {pkg.itinerary.length > 0 ? (
+        <Card className="p-4 sm:p-6">
+          <h2 className="mb-4 text-lg font-bold text-slate-800">Itinerario</h2>
+          <ol className="space-y-4">
+            {pkg.itinerary.map((d) => (
+              <li key={d.day} className="flex gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">
+                  {d.day}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{d.title}</p>
+                  <p className="text-sm leading-relaxed text-slate-500">{d.description}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      ) : null}
     </div>
   );
 }

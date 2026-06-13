@@ -70,6 +70,7 @@ export default async function AdminCanjesPage() {
             <Row key={r.id} info={promoterInfo(r)} reward={reward(r)} pts={r.points_cost_snapshot} date={r.created_at} badge={statusBadge[r.status]}>
               <ActionButton action={setRedemptionStatus.bind(null, r.id, "delivered", undefined)} variant="primary">Marcar entregado</ActionButton>
               <ActionButton action={setRedemptionStatus.bind(null, r.id, "cancelled", undefined)} variant="ghost" confirm="¿Cancelar? Se devuelven los puntos.">Cancelar</ActionButton>
+              <ActionButton action={deleteRedemption.bind(null, r.id)} variant="ghost" confirm="¿Eliminar este canje? No se puede deshacer. Los puntos NO se devuelven.">Eliminar</ActionButton>
             </Row>
           ))}
         </Section>
